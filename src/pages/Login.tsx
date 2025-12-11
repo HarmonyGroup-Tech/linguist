@@ -9,6 +9,7 @@ export default function Login() {
     const [searchParams] = useSearchParams();
     const [isSignup, setIsSignup] = useState(searchParams.get('mode') === 'signup');
     const [role, setRole] = useState<'learner' | 'client'>((searchParams.get('role') as 'client') || 'learner');
+    const [language, setLanguage] = useState('Spanish'); // Default language
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function Login() {
                 await setDoc(doc(db, "users", cred.user.uid), {
                     email,
                     role,
+                    learningLanguage: role === 'learner' ? language : null,
                     createdAt: new Date()
                 });
             } else {
@@ -70,24 +72,43 @@ export default function Login() {
                         )}
 
                         {isSignup && (
-                            <div className="flex p-1.5 bg-gray-50 border border-gray-200 rounded-2xl mb-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('learner')}
-                                    className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'learner' ? 'bg-white text-brand-dark shadow-md border border-gray-100' : 'text-gray-400 hover:text-gray-600'
-                                        }`}
-                                >
-                                    Learner
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('client')}
-                                    className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'client' ? 'bg-brand-dark text-white shadow-md' : 'text-gray-400 hover:text-gray-600'
-                                        }`}
-                                >
-                                    Publisher
-                                </button>
-                            </div>
+                            <>
+                                <div className="flex p-1.5 bg-gray-50 border border-gray-200 rounded-2xl mb-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole('learner')}
+                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'learner' ? 'bg-white text-brand-dark shadow-md border border-gray-100' : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Learner
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole('client')}
+                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'client' ? 'bg-brand-dark text-white shadow-md' : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Publisher
+                                    </button>
+                                </div>
+
+                                {role === 'learner' && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">I want to learn</label>
+                                        <select
+                                            value={language}
+                                            onChange={(e) => setLanguage(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium appearance-none"
+                                        >
+                                            <option value="Spanish">Spanish</option>
+                                            <option value="French">French</option>
+                                            <option value="German">German</option>
+                                            <option value="Italian">Italian</option>
+                                            <option value="Portuguese">Portuguese</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         <div className="space-y-4">

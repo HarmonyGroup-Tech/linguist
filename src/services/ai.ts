@@ -7,7 +7,7 @@ export interface LessonResponse {
     targetSentence: string;
 }
 
-export async function generateLesson(topic: string, level: string): Promise<LessonResponse> {
+export async function generateLesson(topic: string, level: string, language: string = "Spanish"): Promise<LessonResponse> {
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -24,18 +24,18 @@ export async function generateLesson(topic: string, level: string): Promise<Less
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are a language teacher. Generate a language lesson snippet based on valid literary works.
+                        "content": `You are a language teacher. Generate a language lesson snippet in ${language} based on valid literary works.
             Output purely valid JSON with the following structure:
             {
               "sourceTitle": "Title of the book",
               "sourceAuthor": "Author name",
-              "context": "A paragraph of text with 3-4 sentences.",
+              "context": "A paragraph of text with 3-4 sentences in ${language}.",
               "targetSentence": "One specific sentence from the context that is suitable for translation."
             }`
                     },
                     {
                         "role": "user",
-                        "content": `Generate a ${level} level lesson about ${topic}.`
+                        "content": `Generate a ${level} level lesson about ${topic} in ${language}.`
                     }
                 ]
             })
@@ -47,6 +47,12 @@ export async function generateLesson(topic: string, level: string): Promise<Less
 
         // Netlify function returns the OpenRouter response object
         const data = await response.json();
+
+        if (!data || !data.choices || !data.choices.length) {
+            console.error("Invalid AI Response structure:", data);
+            throw new Error("Invalid AI Response: Missing 'choices'");
+        }
+
         const content = data.choices[0].message.content;
         return JSON.parse(content) as LessonResponse;
     } catch (error) {

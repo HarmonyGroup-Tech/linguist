@@ -25,6 +25,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
             body: JSON.stringify(body)
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("OpenRouter API Error:", response.status, errorText);
+            return {
+                statusCode: response.status,
+                body: JSON.stringify({ error: `Upstream API Error: ${response.status}`, details: errorText })
+            };
+        }
+
         const data = await response.json();
         return {
             statusCode: 200,

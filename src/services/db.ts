@@ -97,5 +97,16 @@ export const UserProgressService = {
         } catch (e) {
             console.error("Error updating XP: ", e);
         }
+    },
+
+    async getUserProfile(userId: string) {
+        try {
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+            return userSnap.exists() ? userSnap.data() : null;
+        } catch (e) {
+            console.error("Error fetching user profile:", e);
+            return null;
+        }
     }
 };

@@ -27,9 +27,18 @@ export default function LearnerDashboard() {
     const loadNewLesson = async () => {
         setLoading(true);
         try {
+            // Fetch User Language
+            let learningLanguage = "Spanish"; // Default
+            if (currentUser) {
+                const userDoc = await UserProgressService.getUserProfile(currentUser.uid); // Need to helper for this or direct query
+                if (userDoc?.learningLanguage) {
+                    learningLanguage = userDoc.learningLanguage;
+                }
+            }
+
             // Real AI Call
             const topic = "travel";
-            const newLesson = await fetchLesson(topic, "B2");
+            const newLesson = await fetchLesson(topic, "B2", learningLanguage);
             setLesson({
                 id: Date.now().toString(), // Temp ID
                 ...newLesson
