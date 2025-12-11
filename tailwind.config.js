@@ -7,13 +7,17 @@ export default {
     theme: {
         extend: {
             colors: {
-                background: '#0f172a', // Slate 900
-                primary: '#3b82f6', // Blue 500
-                secondary: '#64748b', // Slate 500
-                accent: '#8b5cf6', // Violet 500
+                brand: {
+                    yellow: '#FFD23F', // Vibrant Friendly Yellow
+                    dark: '#1F2937',   // Soft Charcoal
+                    blob: '#FFEECC',   // Pastel Yellow Accent
+                    gray: '#F3F4F6',   // Light Gray Background
+                },
+                background: '#0f172a', // Keep existing for dark mode compatibility if needed, or override
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
+                sans: ['Outfit', 'sans-serif'],
+                heading: ['Outfit', 'sans-serif'],
             }
         },
     },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { generateLesson as fetchLesson } from '../services/ai';
 import LessonView from '../components/LessonView';
-import { LogOut, Award, Flame } from 'lucide-react';
+import { LogOut, Award, Flame, Feather } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserProgressService } from '../services/db';
@@ -62,35 +62,40 @@ export default function LearnerDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-white">
+        <div className="min-h-screen bg-brand-gray text-brand-dark font-sans">
             {/* Header */}
-            <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                        Linguist <span className="text-slate-500 font-normal text-sm ml-2">Coach</span>
-                    </h1>
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-brand-yellow rounded-xl flex items-center justify-center">
+                            <Feather className="w-6 h-6 text-brand-dark" strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-xl font-bold text-brand-dark tracking-tight">
+                            Linguist <span className="text-gray-400 font-medium ml-2">Coach</span>
+                        </h1>
+                    </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 text-orange-400">
+                    <div className="flex items-center gap-8">
+                        <div className="flex items-center gap-2 text-orange-500 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
                             <Flame className="w-5 h-5 fill-current" />
                             <span className="font-bold">{streak}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-yellow-400">
+                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
                             <Award className="w-5 h-5" />
                             <span className="font-bold">{xp} XP</span>
                         </div>
 
-                        <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                            <LogOut className="w-5 h-5 text-slate-400" />
+                        <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
+                            <LogOut className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
             </header>
 
             <main className="py-12 px-6">
-                <div className="max-w-4xl mx-auto text-center mb-10">
-                    <h2 className="text-3xl font-bold mb-2">Daily Practice</h2>
-                    <p className="text-slate-400">Translate the snippet below to unlock the next chapter.</p>
+                <div className="max-w-4xl mx-auto text-center mb-12">
+                    <h2 className="text-4xl font-bold mb-3 text-brand-dark">Daily Practice</h2>
+                    <p className="text-gray-500 text-lg">Translate the snippet below to unlock the next chapter.</p>
                 </div>
 
                 {lesson ? (
@@ -100,8 +105,8 @@ export default function LearnerDashboard() {
                         onComplete={handleLessonComplete}
                     />
                 ) : (
-                    <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="flex justify-center py-24">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-yellow"></div>
                     </div>
                 )}
             </main>
