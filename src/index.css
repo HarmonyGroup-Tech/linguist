@@ -1,11 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-brand-yellow: #FFD23F;
+  --color-brand-dark: #1F2937;
+  --color-brand-blob: #FFEECC;
+  --color-brand-gray: #F3F4F6;
+
+  --font-sans: 'Outfit', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+}
 
 :root {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
+
   line-height: 1.5;
   font-weight: 400;
 
