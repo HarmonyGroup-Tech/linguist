@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 
-const OPENROUTER_API_KEY = process.env.VITE_OPENROUTER_API_KEY; // Netlify exposes these
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 
 export const handler: Handler = async (event: HandlerEvent) => {
     if (event.httpMethod !== 'POST') {
