@@ -7,8 +7,14 @@ export const handler: Handler = async (event: HandlerEvent) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
+    const hasKey = !!OPENROUTER_API_KEY;
+    console.log("Checking API Configuration...");
+    console.log("OPENROUTER_API_KEY present:", hasKey);
+    console.log("Environment Keys:", Object.keys(process.env).filter(k => !k.includes('KEY') && !k.includes('SECRET')));
+
     if (!OPENROUTER_API_KEY) {
-        return { statusCode: 500, body: 'Missing API Key configuration' };
+        console.error("Missing OPENROUTER_API_KEY");
+        return { statusCode: 500, body: JSON.stringify({ error: 'Missing API Key configuration. Check Netlify Environment Variables.' }) };
     }
 
     try {
