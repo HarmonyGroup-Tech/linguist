@@ -20,6 +20,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
     try {
         const body = JSON.parse(event.body || '{}');
 
+        // Log sanitized request (for debugging)
+        console.log("Request to OpenRouter:", {
+            model: body.model,
+            messageCount: body.messages?.length,
+            hasResponseFormat: !!body.response_format
+        });
+
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -33,14 +40,27 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("OpenRouter API Error:", response.status, errorText);
+            console.error("OpenRouter API Error:", {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText
+            });
             return {
                 statusCode: response.status,
-                body: JSON.stringify({ error: `Upstream API Error: ${response.status}`, details: errorText })
+                body: JSON.stringify({
+                    error: `Upstream API Error: ${response.status}`,
+                    details: errorText,
+                    message: "AI service temporarily unavailable. Please try again."
+                })
             };
         }
 
         const data = await response.json();
+        console.log("OpenRouter Response:", {
+            hasChoices: !!data.choices,
+            choicesLength: data.choices?.length
+        });
+
         return {
             statusCode: 200,
             body: JSON.stringify(data)
@@ -49,7 +69,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
         console.error("Function error:", error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: "Failed to process request" })
+            body: JSON.stringify({ error: "Failed to process request", details: String(error) })
         };
     }
 };

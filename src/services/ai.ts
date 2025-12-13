@@ -15,7 +15,7 @@ export async function generateLesson(topic: string, level: string, language: str
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "google/gemini-2.0-pro-exp-02-05:free",
+                "model": "meta-llama/llama-3.2-3b-instruct:free",
                 "messages": [
                     {
                         "role": "system",
@@ -40,7 +40,9 @@ The JSON must follow this exact structure:
         });
 
         if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+            console.error("API Error Response:", errorData);
+            throw new Error(`API Error: ${response.status} - ${errorData.message || errorData.error || 'Unknown error'}`);
         }
 
         // Netlify function returns the OpenRouter response object
