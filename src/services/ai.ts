@@ -15,27 +15,25 @@ export async function generateLesson(topic: string, level: string, language: str
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                // The function handles the model and prompt structure, 
-                // but for flexibility we can pass partial params or move full logic here.
-                // Given the function implementation, it expects "body" to be forwarded to OpenRouter.
-                // So we reconstruct the OpenRouter body here.
                 "model": "google/gemini-2.0-pro-exp-02-05:free",
-                "response_format": { "type": "json_object" },
                 "messages": [
                     {
                         "role": "system",
                         "content": `You are a language teacher. Generate a language lesson snippet in ${language} based on valid literary works.
-            Output purely valid JSON with the following structure:
-            {
-              "sourceTitle": "Title of the book",
-              "sourceAuthor": "Author name",
-              "context": "A paragraph of text with 3-4 sentences in ${language}.",
-              "targetSentence": "One specific sentence from the context that is suitable for translation."
-            }`
+            
+CRITICAL: You MUST respond with ONLY valid JSON - no markdown formatting, no code blocks, no extra text.
+
+The JSON must follow this exact structure:
+{
+  "sourceTitle": "Title of the book",
+  "sourceAuthor": "Author name",
+  "context": "A paragraph of text with 3-4 sentences in ${language}.",
+  "targetSentence": "One specific sentence from the context that is suitable for translation."
+}`
                     },
                     {
                         "role": "user",
-                        "content": `Generate a ${level} level lesson about ${topic} in ${language}.`
+                        "content": `Generate a ${level} level lesson about ${topic} in ${language}. Respond with ONLY the JSON object, nothing else.`
                     }
                 ]
             })
@@ -53,7 +51,11 @@ export async function generateLesson(topic: string, level: string, language: str
             throw new Error("Invalid AI Response: Missing 'choices'");
         }
 
-        const content = data.choices[0].message.content;
+        let content = data.choices[0].message.content;
+
+        // Strip markdown code blocks if present (some models add ```json ... ```)
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
         return JSON.parse(content) as LessonResponse;
     } catch (error) {
         console.error("AI Generation failed:", error);
