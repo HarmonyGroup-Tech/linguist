@@ -15,7 +15,7 @@ export async function generateLesson(topic: string, level: string, language: str
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "meta-llama/llama-3.2-3b-instruct:free",
+                "model": "google/gemini-flash-1.5:free",
                 "messages": [
                     {
                         "role": "system",
@@ -61,9 +61,14 @@ The JSON must follow this exact structure:
         return JSON.parse(content) as LessonResponse;
     } catch (error) {
         console.error("AI Generation failed:", error);
+
+        // Check if it's a rate limit error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isRateLimit = errorMessage.includes('429') || errorMessage.includes('rate-limited');
+
         // Fallback Mock for Demo/Stability if API fails
         return {
-            sourceTitle: "The Alchemist",
+            sourceTitle: isRateLimit ? "Demo Mode (Free API Rate Limited)" : "The Alchemist",
             sourceAuthor: "Paulo Coelho",
             context: "The boy's name was Santiago. Dusk was falling as the boy arrived with his herd at an abandoned church. The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood.",
             targetSentence: "The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood."
