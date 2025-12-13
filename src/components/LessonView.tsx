@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, RefreshCw, Send, Sparkles } from 'lucide-react';
 
@@ -20,6 +20,12 @@ interface LessonViewProps {
 export default function LessonView({ lesson, onComplete, loading }: LessonViewProps) {
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
+
+    // Reset submitted state when lesson changes
+    useEffect(() => {
+        setSubmitted(false);
+        setInput('');
+    }, [lesson.id]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
