@@ -15,7 +15,7 @@ export async function generateLesson(topic: string, level: string, language: str
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "google/gemini-flash-1.5:free",
+                "model": "mistralai/Mistral-7B-Instruct-v0.2",
                 "messages": [
                     {
                         "role": "system",
