@@ -1,4 +1,3 @@
-```typescript
 import type { Handler, HandlerEvent } from '@netlify/functions';
 
 const AIMLAPI_KEY = process.env.AIMLAPI_KEY;
@@ -31,7 +30,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
         const response = await fetch("https://api.aimlapi.com/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${ AIMLAPI_KEY } `,
+                "Authorization": `Bearer ${AIMLAPI_KEY} `,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(body)
@@ -47,7 +46,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
             return {
                 statusCode: response.status,
                 body: JSON.stringify({
-                    error: `Upstream API Error: ${ response.status } `,
+                    error: `Upstream API Error: ${response.status} `,
                     details: errorText,
                     message: "AI service temporarily unavailable. Please try again."
                 })
