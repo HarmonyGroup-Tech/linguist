@@ -20,10 +20,12 @@ interface LessonViewProps {
 export default function LessonView({ lesson, onComplete, loading }: LessonViewProps) {
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Reset submitted state when lesson changes
     useEffect(() => {
         setSubmitted(false);
+        setShowSuccess(false);
         setInput('');
     }, [lesson.id]);
 
@@ -31,8 +33,14 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         e.preventDefault();
         if (!input.trim()) return;
         setSubmitted(true);
-        // In a real app, we might wait for animation or validation before calling onComplete
-        setTimeout(() => onComplete(input), 1500);
+
+        // Show checking animation, then success, then load next
+        setTimeout(() => {
+            setShowSuccess(true);
+            setTimeout(() => {
+                onComplete(input);
+            }, 1500); // Wait to show success before loading next
+        }, 800);
     };
 
     // Highlight target sentence in context
@@ -84,16 +92,41 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10"
+                                        className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10"
                                     >
-                                        <motion.div
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                            className="p-3 bg-brand-yellow/20 rounded-full"
-                                        >
-                                            <RefreshCw className="w-8 h-8 text-brand-dark" />
-                                        </motion.div>
-                                        <p className="text-brand-dark font-bold text-lg">Checking your work...</p>
+                                        {showSuccess ? (
+                                            <>
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    transition={{ type: "spring", stiffness: 200 }}
+                                                    className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center"
+                                                >
+                                                    <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </motion.div>
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="text-center"
+                                                >
+                                                    <p className="text-green-600 font-bold text-2xl mb-1">Great work!</p>
+                                                    <p className="text-gray-600 text-sm">+50 XP</p>
+                                                </motion.div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                    className="p-3 bg-brand-yellow/20 rounded-full"
+                                                >
+                                                    <RefreshCw className="w-8 h-8 text-brand-dark" />
+                                                </motion.div>
+                                                <p className="text-brand-dark font-bold text-lg">Checking your work...</p>
+                                            </>
+                                        )}
                                     </motion.div>
                                 )}
                             </AnimatePresence>
