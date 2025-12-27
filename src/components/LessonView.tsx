@@ -8,7 +8,7 @@ interface LessonData {
     targetSentence: string;
     sourceTitle: string;
     sourceAuthor: string;
-    translation?: string; // Correct translation for verification (hidden initially)
+    correctTranslation?: string; // Correct translation for verification
 }
 
 interface LessonViewProps {

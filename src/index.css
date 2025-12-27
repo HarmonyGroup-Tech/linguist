@@ -6,6 +6,12 @@
   --color-brand-blob: #FFEECC;
   --color-brand-gray: #F3F4F6;
 
+  /* Skill-specific colors */
+  --vocabulary-color: #FF6B6B;
+  --grammar-color: #4ECDC4;
+  --reading-color: #45B7D1;
+  --writing-color: #FFA07A;
+
   --font-sans: 'Outfit', sans-serif;
   --font-heading: 'Outfit', sans-serif;
 }

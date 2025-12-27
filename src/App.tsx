@@ -4,7 +4,9 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import LearnerDashboard from './pages/LearnerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
@@ -31,6 +33,16 @@ function App() {
               <ProtectedRoute role="client">
                 <ClientDashboard />
               </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Admin Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             }
           />
         </Routes>

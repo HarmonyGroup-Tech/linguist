@@ -2,6 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     // User Profiles: Users can only read/write their own data
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -10,6 +16,17 @@ service cloud.firestore {
     // Projects: Authenticated users can read/write (refine for Client role later)
     match /projects/{projectId} {
       allow read, write: if request.auth != null;
+    }
+    
+    // Lessons: All authenticated users can read, only admins can write
+    match /lessons/{lessonId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // User Skills: Users can only read/write their own skills
+    match /userSkills/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
     // Default: Deny everything else

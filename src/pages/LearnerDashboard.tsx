@@ -1,77 +1,113 @@
 import { useEffect, useState } from 'react';
-import { generateLesson as fetchLesson } from '../services/ai';
 import LessonView from '../components/LessonView';
-import { LogOut, Award, Flame, Feather } from 'lucide-react';
+import SkillProgress from '../components/SkillProgress';
+import LessonPath from '../components/LessonPath';
+import { LogOut, Flame, Award, Feather } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { UserProgressService } from '../services/db';
+import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
     const { logout, currentUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [lesson, setLesson] = useState<any>(null);
-    const [streak, setStreak] = useState(0);
-    const [xp, setXp] = useState(0);
-    const [error, setError] = useState('');
+    const [userSkills, setUserSkills] = useState<UserSkills | null>(null);
+    const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
+    const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
 
-    // Initial Data Load
     useEffect(() => {
         if (currentUser) {
-            UserProgressService.getUserProgress(currentUser.uid).then(progress => {
-                setStreak(progress.streak);
-                setXp(progress.totalXP);
-            });
+            loadUserData();
         }
     }, [currentUser]);
 
-    const loadNewLesson = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            // Fetch User Language
-            let learningLanguage = "Spanish"; // Default
-            if (currentUser) {
-                const userDoc = await UserProgressService.getUserProfile(currentUser.uid); // Need to helper for this or direct query
-                if (userDoc?.learningLanguage) {
-                    learningLanguage = userDoc.learningLanguage;
-                }
-            }
+    const loadUserData = async () => {
+        if (!currentUser) return;
 
-            // Real AI Call
-            const topic = "travel";
-            const newLesson = await fetchLesson(topic, "B2", learningLanguage);
-            setLesson({
-                id: Date.now().toString(), // Temp ID
-                ...newLesson
-            });
-        } catch (e) {
-            console.error(e);
-            setError("Unable to contact the Coach. Please check your connection or API configuration.");
+        setLoading(true);
+        try {
+            // Initialize user skills if needed
+            await UserSkillsService.initializeUserSkills(currentUser.uid);
+
+            // Load user skills
+            const skills = await UserSkillsService.getUserSkills(currentUser.uid);
+            setUserSkills(skills);
+
+            // Load available lessons
+            const lessons = await LessonService.getAvailableLessons(skills);
+            setAvailableLessons(lessons);
+        } catch (error) {
+            console.error('Error loading user data:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadNewLesson();
-    }, []);
+    const handleLessonSelect = (lesson: Lesson) => {
+        setCurrentLesson(lesson);
+    };
 
-    const handleLessonComplete = async (translation: string) => {
-        console.log("Translation submitted:", translation);
-        const xpGain = 50;
-        setXp(prev => prev + xpGain);
+    const handleLessonComplete = async (userTranslation: string) => {
+        if (!currentUser || !currentLesson || !userSkills) return;
 
-        if (currentUser) {
-            await UserProgressService.updateUserXP(currentUser.uid, xpGain);
+        console.log('Translation submitted:', userTranslation);
+
+        // Track which skills leveled up
+        const skillsBeforeUpdate = { ...userSkills };
+
+        try {
+            // Complete lesson and update skills
+            const updatedSkills = await UserSkillsService.completeLesson(
+                currentUser.uid,
+                currentLesson.id!,
+                {
+                    vocabularyGain: currentLesson.vocabularyGain,
+                    grammarGain: currentLesson.grammarGain,
+                    readingGain: currentLesson.readingGain,
+                    writingGain: currentLesson.writingGain,
+                    xpReward: currentLesson.xpReward
+                }
+            );
+
+            // Check for level ups
+            const levelsUp: string[] = [];
+            if (updatedSkills.vocabulary > skillsBeforeUpdate.vocabulary) levelsUp.push('vocabulary');
+            if (updatedSkills.grammar > skillsBeforeUpdate.grammar) levelsUp.push('grammar');
+            if (updatedSkills.reading > skillsBeforeUpdate.reading) levelsUp.push('reading');
+            if (updatedSkills.writing > skillsBeforeUpdate.writing) levelsUp.push('writing');
+
+            if (levelsUp.length > 0) {
+                setLevelUpSkills(levelsUp);
+                setShowCelebration(true);
+                setTimeout(() => setShowCelebration(false), 3000);
+            }
+
+            setUserSkills(updatedSkills);
+            setCurrentLesson(null);
+
+            // Reload lessons to update available list
+            const lessons = await LessonService.getAvailableLessons(updatedSkills);
+            setAvailableLessons(lessons);
+        } catch (error) {
+            console.error('Error completing lesson:', error);
         }
-        loadNewLesson();
     };
 
     const handleLogout = async () => {
         await logout();
         navigate('/');
     };
+
+    if (loading || !userSkills) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-brand-gray">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-yellow"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-brand-gray text-brand-dark font-sans">
@@ -83,18 +119,18 @@ export default function LearnerDashboard() {
                             <Feather className="w-6 h-6 text-brand-dark" strokeWidth={2.5} />
                         </div>
                         <h1 className="text-xl font-bold text-brand-dark tracking-tight">
-                            Linguist <span className="text-gray-400 font-medium ml-2">Coach</span>
+                            Linguist <span className="text-gray-400 font-medium ml-2">Learn</span>
                         </h1>
                     </div>
 
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2 text-orange-500 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
                             <Flame className="w-5 h-5 fill-current" />
-                            <span className="font-bold">{streak}</span>
+                            <span className="font-bold">{userSkills.streak}</span>
                         </div>
                         <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
                             <Award className="w-5 h-5" />
-                            <span className="font-bold">{xp} XP</span>
+                            <span className="font-bold">{userSkills.totalXP} XP</span>
                         </div>
 
                         <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
@@ -104,36 +140,73 @@ export default function LearnerDashboard() {
                 </div>
             </header>
 
-            <main className="py-12 px-6">
-                <div className="max-w-4xl mx-auto text-center mb-12">
-                    <h2 className="text-4xl font-bold mb-3 text-brand-dark">Daily Practice</h2>
-                    <p className="text-gray-500 text-lg">Translate the snippet below to unlock the next chapter.</p>
-                </div>
-
-                {error ? (
-                    <div className="max-w-md mx-auto p-6 bg-red-50 border border-red-100 rounded-2xl text-center">
-                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                            <Feather className="w-6 h-6" />
-                        </div>
-                        <h3 className="text-lg font-bold text-red-900 mb-2">Connection Error</h3>
-                        <p className="text-red-700 mb-6">{error}</p>
-                        <button
-                            onClick={loadNewLesson}
-                            className="px-6 py-2 bg-white border border-red-200 text-red-700 font-bold rounded-xl shadow-sm hover:bg-red-50 transition-colors"
+            <main className="py-12 px-6 max-w-7xl mx-auto">
+                {/* Level Up Celebration */}
+                <AnimatePresence>
+                    {showCelebration && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                            className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-8 py-4 rounded-2xl shadow-2xl"
                         >
-                            Try Again
+                            <div className="flex items-center gap-3">
+                                <Award className="w-8 h-8" />
+                                <div>
+                                    <p className="font-bold text-lg">Level Up!</p>
+                                    <p className="text-sm opacity-90">
+                                        {levelUpSkills.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} improved!
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Current Lesson View */}
+                {currentLesson ? (
+                    <div className="mb-12">
+                        <button
+                            onClick={() => setCurrentLesson(null)}
+                            className="mb-6 text-sm font-semibold text-gray-600 hover:text-brand-dark transition-colors"
+                        >
+                            ← Back to Lessons
                         </button>
+                        <LessonView
+                            lesson={{
+                                id: currentLesson.id!,
+                                context: currentLesson.context,
+                                targetSentence: currentLesson.targetSentence,
+                                sourceTitle: currentLesson.sourceTitle || '',
+                                sourceAuthor: currentLesson.sourceAuthor || '',
+                                correctTranslation: currentLesson.correctTranslation
+                            }}
+                            loading={false}
+                            onComplete={handleLessonComplete}
+                        />
                     </div>
-                ) : lesson ? (
-                    <LessonView
-                        lesson={lesson}
-                        loading={loading}
-                        onComplete={handleLessonComplete}
-                    />
                 ) : (
-                    <div className="flex justify-center py-24">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-yellow"></div>
-                    </div>
+                    <>
+                        {/* Skills Progress */}
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-bold text-brand-dark mb-4">Your Skills</h2>
+                            <SkillProgress
+                                vocabulary={userSkills.vocabulary}
+                                grammar={userSkills.grammar}
+                                reading={userSkills.reading}
+                                writing={userSkills.writing}
+                            />
+                        </div>
+
+                        {/* Lesson Path */}
+                        <div>
+                            <LessonPath
+                                lessons={availableLessons}
+                                userSkills={userSkills}
+                                onLessonSelect={handleLessonSelect}
+                            />
+                        </div>
+                    </>
                 )}
             </main>
         </div>
