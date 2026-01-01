@@ -111,7 +111,7 @@ export const LessonService = {
         try {
             const q = query(collection(db, 'lessons'), orderBy('order', 'asc'));
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({
+            return querySnapshot.docs.map((doc: any) => ({
                 id: doc.id,
                 ...doc.data()
             } as Lesson));

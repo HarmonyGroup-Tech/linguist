@@ -69,7 +69,7 @@ export default function AdminDashboard() {
         navigate('/');
     };
 
-    const filteredLessons = lessons.filter(lesson => {
+    const filteredLessons = lessons.filter((lesson: Lesson) => {
         if (filter === 'active') return lesson.isActive;
         if (filter === 'draft') return !lesson.isActive;
         return true;
@@ -77,8 +77,8 @@ export default function AdminDashboard() {
 
     const stats = {
         total: lessons.length,
-        active: lessons.filter(l => l.isActive).length,
-        draft: lessons.filter(l => !l.isActive).length
+        active: lessons.filter((l: Lesson) => l.isActive).length,
+        draft: lessons.filter((l: Lesson) => !l.isActive).length
     };
 
     return (
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredLessons.map((lesson) => (
+                                {filteredLessons.map((lesson: Lesson) => (
                                     <tr key={lesson.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
