@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LessonService, Lesson } from '../services/lessonService';
+import { LessonService, type Lesson } from '../services/lessonService';
 import LessonEditor from '../components/LessonEditor';
-import { LogOut, Plus, Edit2, Trash2, Check, X, Feather, BookOpen, TrendingUp } from 'lucide-react';
+import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp } from 'lucide-react';
 
 export default function AdminDashboard() {
     const { logout, currentUser } = useAuth();
@@ -147,8 +147,8 @@ export default function AdminDashboard() {
                         <button
                             onClick={() => setFilter('all')}
                             className={`px-4 py-2 rounded-xl font-semibold transition-all ${filter === 'all'
-                                    ? 'bg-brand-dark text-white'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                                ? 'bg-brand-dark text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             All ({stats.total})
@@ -156,8 +156,8 @@ export default function AdminDashboard() {
                         <button
                             onClick={() => setFilter('active')}
                             className={`px-4 py-2 rounded-xl font-semibold transition-all ${filter === 'active'
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             Active ({stats.active})
@@ -165,8 +165,8 @@ export default function AdminDashboard() {
                         <button
                             onClick={() => setFilter('draft')}
                             className={`px-4 py-2 rounded-xl font-semibold transition-all ${filter === 'draft'
-                                    ? 'bg-orange-600 text-white'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                                ? 'bg-orange-600 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             Drafts ({stats.draft})
@@ -284,8 +284,8 @@ export default function AdminDashboard() {
                                             <button
                                                 onClick={() => handleToggleActive(lesson)}
                                                 className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${lesson.isActive
-                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                        : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                                                     }`}
                                             >
                                                 {lesson.isActive ? 'Active' : 'Draft'}

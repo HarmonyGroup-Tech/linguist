@@ -10,6 +10,7 @@ import {
     updateDoc,
     deleteDoc,
     orderBy,
+    setDoc,
     Timestamp
 } from 'firebase/firestore';
 
@@ -20,27 +21,27 @@ export interface Lesson {
     description: string;
     language: string;
     level: number; // 1-10 difficulty
-    
+
     // Content
     context: string;
     targetSentence: string;
     correctTranslation: string;
     sourceTitle?: string;
     sourceAuthor?: string;
-    
+
     // Prerequisites (0-100 for each skill)
     requiredVocabulary: number;
     requiredGrammar: number;
     requiredReading: number;
     requiredWriting: number;
-    
+
     // Rewards
     xpReward: number;
     vocabularyGain: number;
     grammarGain: number;
     readingGain: number;
     writingGain: number;
-    
+
     // Metadata
     createdBy: string;
     createdAt: Date | Timestamp;
@@ -138,7 +139,7 @@ export const LessonService = {
             } as Lesson));
 
             // Filter by prerequisites
-            return allLessons.filter(lesson => 
+            return allLessons.filter(lesson =>
                 userSkills.vocabulary >= lesson.requiredVocabulary &&
                 userSkills.grammar >= lesson.requiredGrammar &&
                 userSkills.reading >= lesson.requiredReading &&
@@ -158,7 +159,7 @@ export const LessonService = {
         try {
             const docRef = doc(db, 'lessons', lessonId);
             const docSnap = await getDoc(docRef);
-            
+
             if (docSnap.exists()) {
                 return {
                     id: docSnap.id,
@@ -238,7 +239,7 @@ export const UserSkillsService = {
                     lastPracticeDate: "",
                     completedLessons: []
                 };
-                
+
                 // Create the document
                 await updateDoc(docRef, defaultSkills as any);
                 return defaultSkills;
@@ -273,7 +274,7 @@ export const UserSkillsService = {
         try {
             const userSkillsRef = doc(db, 'userSkills', userId);
             const currentSkills = await this.getUserSkills(userId);
-            
+
             // Calculate new skill levels (cap at 100)
             const newVocabulary = Math.min(100, currentSkills.vocabulary + skillGains.vocabularyGain);
             const newGrammar = Math.min(100, currentSkills.grammar + skillGains.grammarGain);
@@ -285,7 +286,7 @@ export const UserSkillsService = {
             const today = new Date().toISOString().split('T')[0];
             const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
             let newStreak = currentSkills.streak;
-            
+
             if (currentSkills.lastPracticeDate === yesterday) {
                 newStreak += 1;
             } else if (currentSkills.lastPracticeDate !== today) {
@@ -335,11 +336,10 @@ export const UserSkillsService = {
                 lastPracticeDate: "",
                 completedLessons: []
             };
-            
-            // Using updateDoc will create if doesn't exist with setDoc behavior
+
+            // Try to update, if it fails (document doesn't exist), create it
             await updateDoc(userSkillsRef, defaultSkills as any).catch(async () => {
-                // If document doesn't exist, this will create it
-                const { setDoc } = await import('firebase/firestore');
+                // If document doesn't exist, create it
                 await setDoc(userSkillsRef, defaultSkills);
             });
         } catch (e) {
