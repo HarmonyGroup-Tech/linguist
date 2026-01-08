@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import LessonView from '../components/LessonView';
 import SkillProgress from '../components/SkillProgress';
 import LessonPath from '../components/LessonPath';
-import { LogOut, Flame, Award, Feather } from 'lucide-react';
+import QuotationsView from '../components/QuotationsView';
+import { LogOut, Flame, Award, Feather, Map, Quote } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
@@ -17,6 +18,7 @@ export default function LearnerDashboard() {
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
 
     useEffect(() => {
         if (currentUser) {
@@ -173,14 +175,7 @@ export default function LearnerDashboard() {
                             ← Back to Lessons
                         </button>
                         <LessonView
-                            lesson={{
-                                id: currentLesson.id!,
-                                context: currentLesson.context,
-                                targetSentence: currentLesson.targetSentence,
-                                sourceTitle: currentLesson.sourceTitle || '',
-                                sourceAuthor: currentLesson.sourceAuthor || '',
-                                correctTranslation: currentLesson.correctTranslation
-                            }}
+                            lesson={currentLesson}
                             loading={false}
                             onComplete={handleLessonComplete}
                         />
@@ -198,14 +193,47 @@ export default function LearnerDashboard() {
                             />
                         </div>
 
-                        {/* Lesson Path */}
-                        <div>
-                            <LessonPath
-                                lessons={availableLessons}
-                                userSkills={userSkills}
-                                onLessonSelect={handleLessonSelect}
-                            />
+                        {/* Tabs */}
+                        <div className="flex gap-4 mb-8">
+                            <button
+                                onClick={() => setActiveTab('path')}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'path'
+                                    ? 'bg-brand-dark text-white shadow-lg'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <Map className="w-5 h-5" />
+                                Learning Path
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('workouts')}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'workouts'
+                                    ? 'bg-violet-600 text-white shadow-lg'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <Quote className="w-5 h-5" />
+                                Workouts
+                            </button>
                         </div>
+
+                        {activeTab === 'path' ? (
+                            <div>
+                                <LessonPath
+                                    lessons={availableLessons.filter(l => !l.category || l.category === 'standard')}
+                                    userSkills={userSkills}
+                                    onLessonSelect={handleLessonSelect}
+                                />
+                            </div>
+                        ) : (
+                            <div>
+                                <QuotationsView
+                                    lessons={availableLessons.filter(l => l.category === 'quotation')}
+                                    onSelect={handleLessonSelect}
+                                    completedLessonIds={userSkills.completedLessons}
+                                />
+                            </div>
+                        )}
                     </>
                 )}
             </main>

@@ -2,18 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, RefreshCw, Send, Sparkles } from 'lucide-react';
 
-interface LessonData {
-    id: string;
-    context: string;
-    targetSentence: string;
-    sourceTitle: string;
-    sourceAuthor: string;
-    correctTranslation?: string; // Correct translation for verification
-}
+import { Lesson } from '../services/lessonService';
+import DragDropView from './DragDropView';
 
 interface LessonViewProps {
-    lesson: LessonData;
-    onComplete: (userTranslation: string) => void;
+    lesson: Lesson;
+    onComplete: (userTranslation: string) => Promise<void>;
     loading: boolean;
 }
 
@@ -32,16 +26,30 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
+        handleComplete(input);
+    };
+
+    const handleComplete = (answer: string) => {
         setSubmitted(true);
 
         // Show checking animation, then success, then load next
         setTimeout(() => {
             setShowSuccess(true);
-            setTimeout(() => {
-                onComplete(input);
+            setTimeout(async () => {
+                await onComplete(answer);
             }, 1500); // Wait to show success before loading next
         }, 800);
     };
+
+    if (lesson.type === 'drag-drop') {
+        return (
+            <DragDropView
+                lesson={lesson}
+                onComplete={handleComplete}
+                loading={loading}
+            />
+        );
+    }
 
     // Highlight target sentence in context
     const parts = lesson.context.split(lesson.targetSentence);

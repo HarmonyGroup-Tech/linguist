@@ -31,7 +31,10 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
         writingGain: 5,
         createdBy: userId,
         isActive: true,
-        order: 0
+        order: 0,
+        type: 'text-input',
+        category: 'standard',
+        scrambledOptions: []
     });
 
     const [showPreview, setShowPreview] = useState(false);
@@ -60,7 +63,10 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
                 writingGain: lesson.writingGain,
                 createdBy: lesson.createdBy,
                 isActive: lesson.isActive,
-                order: lesson.order
+                order: lesson.order,
+                type: lesson.type || 'text-input',
+                category: lesson.category || 'standard',
+                scrambledOptions: lesson.scrambledOptions || []
             });
         }
     }, [lesson]);
@@ -135,6 +141,31 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
                                     <option value="Portuguese">Portuguese</option>
                                     <option value="Japanese">Japanese</option>
                                     <option value="Chinese">Chinese</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-brand-dark mb-2">Lesson Type</label>
+                                <select
+                                    value={formData.type}
+                                    onChange={(e) => updateField('type', e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                >
+                                    <option value="text-input">Text Input (Translate)</option>
+                                    <option value="drag-drop">Drag & Drop (Order Tiles)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-brand-dark mb-2">Category</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={(e) => updateField('category', e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                >
+                                    <option value="standard">Standard Lesson (Path)</option>
+                                    <option value="quotation">Quotation (Workout)</option>
                                 </select>
                             </div>
                         </div>
@@ -220,7 +251,26 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                                     placeholder="The correct English translation"
                                 />
+
                             </div>
+                            {formData.type === 'drag-drop' && (
+                                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                                    <label className="block text-sm font-bold text-yellow-800 mb-2">Scrambled Words Preview</label>
+                                    <p className="text-xs text-yellow-700 mb-3">
+                                        These words will be generated automatically from the correct translation.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.correctTranslation
+                                            ? formData.correctTranslation.split(' ').sort(() => Math.random() - 0.5).map((word, i) => (
+                                                <span key={i} className="px-3 py-1.5 bg-white border border-yellow-200 rounded-lg text-sm text-yellow-900 font-medium shadow-sm">
+                                                    {word}
+                                                </span>
+                                            ))
+                                            : <span className="text-sm text-gray-400 italic">Enter translation to see preview</span>
+                                        }
+                                    </div>
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-brand-dark mb-2">Source Title</label>

@@ -22,6 +22,11 @@ export interface Lesson {
     language: string;
     level: number; // 1-10 difficulty
 
+    // NEW FIELDS for Expanded Lesson System
+    type: 'text-input' | 'drag-drop';
+    category: 'standard' | 'quotation';
+    scrambledOptions?: string[]; // For drag-drop lessons
+
     // Content
     context: string;
     targetSentence: string;
@@ -111,10 +116,17 @@ export const LessonService = {
         try {
             const q = query(collection(db, 'lessons'), orderBy('order', 'asc'));
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map((doc: any) => ({
-                id: doc.id,
-                ...doc.data()
-            } as Lesson));
+
+            return querySnapshot.docs.map((doc: any) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Default values
+                    type: data.type || 'text-input',
+                    category: data.category || 'standard'
+                } as Lesson;
+            });
         } catch (e) {
             console.error("Error fetching all lessons:", e);
             return [];
@@ -127,17 +139,21 @@ export const LessonService = {
     async getAvailableLessons(userSkills: UserSkills): Promise<Lesson[]> {
         try {
             // Get all active lessons
-            // WE REMOVED orderBy here to avoid needing a composite index for now.
-            // We will sort in memory.
             const q = query(
                 collection(db, 'lessons'),
                 where('isActive', '==', true)
             );
             const querySnapshot = await getDocs(q);
-            const allLessons = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as Lesson));
+            const allLessons = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Default values for backward compatibility
+                    type: data.type || 'text-input',
+                    category: data.category || 'standard'
+                } as Lesson;
+            });
 
             // Sort by order 
             allLessons.sort((a, b) => a.order - b.order);
