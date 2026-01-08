@@ -1,21 +1,25 @@
 import { motion } from 'framer-motion';
-import { Lock, Check, Play, Star } from 'lucide-react';
+import { Lock, Check, Play, Star, Diamond } from 'lucide-react';
 import { Lesson, UserSkills, LessonService } from '../services/lessonService';
 
 interface LessonPathProps {
     lessons: Lesson[];
     userSkills: UserSkills;
     onLessonSelect: (lesson: Lesson) => void;
+    lings?: number;
 }
 
-export default function LessonPath({ lessons, userSkills, onLessonSelect }: LessonPathProps) {
-    const getLessonStatus = (lesson: Lesson): 'completed' | 'available' | 'locked' => {
+export default function LessonPath({ lessons, userSkills, onLessonSelect, lings = 5 }: LessonPathProps) {
+    const getLessonStatus = (lesson: Lesson): 'completed' | 'available' | 'locked' | 'no-lings' => {
         if (userSkills.completedLessons.includes(lesson.id!)) {
             return 'completed';
         }
 
         if (LessonService.checkPrerequisites(userSkills, lesson)) {
-            return 'available';
+            if (lings > 0 || (lesson.category === 'quotation')) {
+                return 'available';
+            }
+            return 'no-lings';
         }
 
         return 'locked';
@@ -40,6 +44,15 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect }: Less
                     textColor: 'text-brand-dark',
                     hoverBg: 'hover:bg-yellow-400',
                     ringColor: 'ring-brand-yellow/30'
+                };
+            case 'no-lings':
+                return {
+                    icon: Lock,
+                    bgColor: 'bg-gray-100',
+                    borderColor: 'border-gray-200',
+                    textColor: 'text-gray-400',
+                    hoverBg: 'hover:bg-gray-200 cursor-not-allowed',
+                    ringColor: 'ring-gray-200'
                 };
             default: // locked
                 return {
@@ -89,7 +102,9 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect }: Less
                                 {/* Icon Circle */}
                                 <div className={`
                                     flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center
-                                    ${status === 'completed' ? 'bg-white/20' : status === 'available' ? 'bg-white/30' : 'bg-white/50'}
+                                    ${status === 'completed' ? 'bg-white/20' :
+                                        status === 'available' ? 'bg-white/30' :
+                                            status === 'no-lings' ? 'bg-white/50 border-2 border-dashed border-gray-300' : 'bg-white/50'}
                                 `}>
                                     <Icon className={`w-6 h-6 ${config.textColor}`} />
                                 </div>
@@ -100,10 +115,15 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect }: Less
                                         <span className={`font-bold ${config.textColor}`}>
                                             {lesson.title}
                                         </span>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${status === 'locked' ? 'bg-white/50 text-gray-500' : 'bg-white/30 ' + config.textColor
-                                            }`}>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${status === 'locked' ? 'bg-white/50 text-gray-500' : 'bg-white/30 ' + config.textColor}`}>
                                             Level {lesson.level}
                                         </span>
+                                        {status === 'no-lings' && (
+                                            <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">
+                                                <Diamond className="w-3 h-3 fill-current" />
+                                                Need Lings
+                                            </span>
+                                        )}
                                     </div>
 
                                     {lesson.description && (

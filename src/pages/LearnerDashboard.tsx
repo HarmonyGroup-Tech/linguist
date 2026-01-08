@@ -3,7 +3,7 @@ import LessonView from '../components/LessonView';
 import SkillProgress from '../components/SkillProgress';
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
-import { LogOut, Flame, Award, Feather, Map, Quote } from 'lucide-react';
+import { LogOut, Flame, Award, Feather, Map, Quote, Diamond } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
@@ -19,6 +19,32 @@ export default function LearnerDashboard() {
     const [showCelebration, setShowCelebration] = useState(false);
     const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
+    const [nextLingRefill, setNextLingRefill] = useState<string>('');
+
+    // Timer for ling refill
+    useEffect(() => {
+        if (!userSkills || userSkills.lings >= 5) return;
+
+        const updateTimer = () => {
+            const lastRefill = new Date(userSkills.lastLingRefill || new Date().toISOString());
+            const nextRefill = new Date(lastRefill.getTime() + 4 * 60 * 60 * 1000); // +4 hours
+            const now = new Date();
+            const diff = nextRefill.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                // Should re-fetch or just wait for next interaction
+                setNextLingRefill('Ready');
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                setNextLingRefill(`${hours}h ${minutes}m`);
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [userSkills]);
 
     useEffect(() => {
         if (currentUser) {
@@ -48,7 +74,14 @@ export default function LearnerDashboard() {
         }
     };
 
-    const handleLessonSelect = (lesson: Lesson) => {
+    const handleLessonSelect = async (lesson: Lesson) => {
+        // Ling Check for Standard Lessons
+        if ((!lesson.category || lesson.category === 'standard') && !userSkills?.completedLessons.includes(lesson.id!)) {
+            if ((userSkills?.lings || 0) <= 0) {
+                alert("Out of Lings! Practice with Quotations while you wait for a refill.");
+                return;
+            }
+        }
         setCurrentLesson(lesson);
     };
 
@@ -62,6 +95,9 @@ export default function LearnerDashboard() {
 
         try {
             // Complete lesson and update skills
+            // Check if we need to consume a ling
+            const consumeLing = (!currentLesson.category || currentLesson.category === 'standard') && !userSkills.completedLessons.includes(currentLesson.id!);
+
             const updatedSkills = await UserSkillsService.completeLesson(
                 currentUser.uid,
                 currentLesson.id!,
@@ -73,6 +109,11 @@ export default function LearnerDashboard() {
                     xpReward: currentLesson.xpReward
                 }
             );
+
+            if (consumeLing) {
+                await UserSkillsService.consumeLing(currentUser.uid);
+                updatedSkills.lings = Math.max(0, updatedSkills.lings - 1);
+            }
 
             // Check for level ups
             const levelsUp: string[] = [];
@@ -133,6 +174,22 @@ export default function LearnerDashboard() {
                         <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
                             <Award className="w-5 h-5" />
                             <span className="font-bold">{userSkills.totalXP} XP</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 relative group cursor-help">
+                            <Diamond className="w-5 h-5 fill-current" />
+                            <span className="font-bold">{userSkills.lings ?? 5}</span>
+                            {userSkills.lings < 5 && (
+                                <span className="text-xs font-normal ml-1 opacity-70">
+                                    {nextLingRefill}
+                                </span>
+                            )}
+                            {/* Tooltip */}
+                            <div className="absolute top-full mt-2 right-0 bg-gray-800 text-white text-xs p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center pointer-events-none">
+                                Refills 1 Ling every 4 hours.
+                                <br />
+                                Max 5 Lings.
+                            </div>
                         </div>
 
                         <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">

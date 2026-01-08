@@ -64,6 +64,8 @@ export interface UserSkills {
     streak: number;
     lastPracticeDate: string;
     completedLessons: string[];
+    lings: number;          // Current balance (0-5)
+    lastLingRefill: string; // ISO Date string
 }
 
 // --- Lesson Service ---
@@ -239,8 +241,11 @@ export const UserSkillsService = {
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                return docSnap.data() as UserSkills;
+                const data = docSnap.data() as UserSkills;
+                // Check and refill lings if needed
+                return await this.ensureLings(data);
             } else {
+                // Initialize new user with default skills
                 // Initialize new user with default skills
                 const defaultSkills: UserSkills = {
                     userId,
@@ -251,7 +256,9 @@ export const UserSkillsService = {
                     totalXP: 0,
                     streak: 0,
                     lastPracticeDate: "",
-                    completedLessons: []
+                    completedLessons: [],
+                    lings: 5, // Start with full lings
+                    lastLingRefill: new Date().toISOString()
                 };
 
                 // Create the document
@@ -270,7 +277,9 @@ export const UserSkillsService = {
                 totalXP: 0,
                 streak: 0,
                 lastPracticeDate: "",
-                completedLessons: []
+                completedLessons: [],
+                lings: 5,
+                lastLingRefill: new Date().toISOString()
             };
         }
     },
@@ -322,7 +331,9 @@ export const UserSkillsService = {
                 totalXP: newTotalXP,
                 streak: newStreak,
                 lastPracticeDate: today,
-                completedLessons
+                completedLessons,
+                lings: currentSkills.lings,
+                lastLingRefill: currentSkills.lastLingRefill
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);
@@ -339,25 +350,100 @@ export const UserSkillsService = {
     async initializeUserSkills(userId: string): Promise<void> {
         try {
             const userSkillsRef = doc(db, 'userSkills', userId);
-            const defaultSkills: UserSkills = {
-                userId,
-                vocabulary: 0,
-                grammar: 0,
-                reading: 0,
-                writing: 0,
-                totalXP: 0,
-                streak: 0,
-                lastPracticeDate: "",
-                completedLessons: []
-            };
 
-            // Try to update, if it fails (document doesn't exist), create it
-            await updateDoc(userSkillsRef, defaultSkills as any).catch(async () => {
-                // If document doesn't exist, create it
+            // First check if it exists to avoid overwriting!
+            const docSnap = await getDoc(userSkillsRef);
+
+            if (!docSnap.exists()) {
+                const defaultSkills: UserSkills = {
+                    userId,
+                    vocabulary: 0,
+                    grammar: 0,
+                    reading: 0,
+                    writing: 0,
+                    totalXP: 0,
+                    streak: 0,
+                    lastPracticeDate: "",
+                    completedLessons: [],
+                    lings: 5,
+                    lastLingRefill: new Date().toISOString()
+                };
+
+                // Use setDoc for new document
                 await setDoc(userSkillsRef, defaultSkills);
-            });
+            } else {
+                // Ensure existing users have new fields
+                const data = docSnap.data() as UserSkills;
+                if (typeof data.lings === 'undefined') {
+                    await updateDoc(userSkillsRef, {
+                        lings: 5,
+                        lastLingRefill: new Date().toISOString()
+                    } as any);
+                }
+            }
         } catch (e) {
             console.error("Error initializing user skills:", e);
         }
+    },
+
+    /**
+     * Check and refill Lings based on time passed
+     */
+    async ensureLings(skills: UserSkills): Promise<UserSkills> {
+        // If already full, just update timestamp to now (or keep old? Keep old to accumulate time? 
+        // Logic: 1 ling every 4 hours.
+        if (skills.lings >= 5) return skills;
+
+        const lastRefill = new Date(skills.lastLingRefill || new Date().toISOString());
+        const now = new Date();
+        const diffMs = now.getTime() - lastRefill.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours >= 4) {
+            const lingsToAdd = Math.floor(diffHours / 4);
+            const newLings = Math.min(5, (skills.lings || 0) + lingsToAdd);
+
+            // Only update if we actually added lings
+            if (newLings > skills.lings) {
+                // We shouldn't just reset lastRefill to now, we should advance it by the amount of time consumed
+                // to keep the "partial" progress.
+                // New time = Old time + (lingsToAdd * 4 hours)
+                const timeAddedMs = lingsToAdd * 4 * 60 * 60 * 1000;
+                const newRefillTime = new Date(lastRefill.getTime() + timeAddedMs).toISOString();
+
+                // If we hit max, validation might be tricky with "partial" time. 
+                // Simpler approach: If maxed out, set time to now.
+                const finalRefillTime = newLings === 5 ? now.toISOString() : newRefillTime;
+
+                const userSkillsRef = doc(db, 'userSkills', skills.userId);
+                await updateDoc(userSkillsRef, {
+                    lings: newLings,
+                    lastLingRefill: finalRefillTime
+                } as any);
+
+                return {
+                    ...skills,
+                    lings: newLings,
+                    lastLingRefill: finalRefillTime
+                };
+            }
+        }
+
+        return skills;
+    },
+
+    /**
+     * Consume a Ling
+     */
+    async consumeLing(userId: string): Promise<boolean> {
+        const skills = await this.getUserSkills(userId);
+        if (skills.lings > 0) {
+            const userSkillsRef = doc(db, 'userSkills', userId);
+            await updateDoc(userSkillsRef, {
+                lings: skills.lings - 1
+            } as any);
+            return true;
+        }
+        return false;
     }
 };
