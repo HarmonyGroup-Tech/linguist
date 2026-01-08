@@ -127,10 +127,11 @@ export const LessonService = {
     async getAvailableLessons(userSkills: UserSkills): Promise<Lesson[]> {
         try {
             // Get all active lessons
+            // WE REMOVED orderBy here to avoid needing a composite index for now.
+            // We will sort in memory.
             const q = query(
                 collection(db, 'lessons'),
-                where('isActive', '==', true),
-                orderBy('order', 'asc')
+                where('isActive', '==', true)
             );
             const querySnapshot = await getDocs(q);
             const allLessons = querySnapshot.docs.map(doc => ({
@@ -138,14 +139,11 @@ export const LessonService = {
                 ...doc.data()
             } as Lesson));
 
-            // Filter by prerequisites
-            return allLessons.filter(lesson =>
-                userSkills.vocabulary >= lesson.requiredVocabulary &&
-                userSkills.grammar >= lesson.requiredGrammar &&
-                userSkills.reading >= lesson.requiredReading &&
-                userSkills.writing >= lesson.requiredWriting &&
-                !userSkills.completedLessons.includes(lesson.id!)
-            );
+            // Sort by order 
+            allLessons.sort((a, b) => a.order - b.order);
+
+            // Return ALL active lessons so the UI can show the full path (completed, available, locked)
+            return allLessons;
         } catch (e) {
             console.error("Error fetching available lessons:", e);
             return [];
