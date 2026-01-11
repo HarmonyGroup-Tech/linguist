@@ -3,14 +3,16 @@ import LessonView from '../components/LessonView';
 import SkillProgress from '../components/SkillProgress';
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
-import { LogOut, Flame, Award, Feather, Map, Quote, Diamond } from 'lucide-react';
+import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
     const { logout, currentUser } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [userSkills, setUserSkills] = useState<UserSkills | null>(null);
@@ -192,9 +194,18 @@ export default function LearnerDashboard() {
                             </div>
                         </div>
 
-                        <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
-                            <LogOut className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
+                                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                            >
+                                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                            </button>
+                            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
+                                <LogOut className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>

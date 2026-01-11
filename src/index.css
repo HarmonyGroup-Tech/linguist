@@ -32,6 +32,56 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dark mode styles */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #F3F4F6;
+}
+
+.dark .bg-brand-gray {
+  background-color: #1F2937;
+}
+
+.dark .bg-white {
+  background-color: #1F2937;
+}
+
+.dark .text-brand-dark {
+  color: #F3F4F6;
+}
+
+.dark .text-gray-600 {
+  color: #D1D5DB;
+}
+
+.dark .text-gray-500 {
+  color: #9CA3AF;
+}
+
+.dark .text-gray-400 {
+  color: #6B7280;
+}
+
+.dark .border-gray-100 {
+  border-color: #374151;
+}
+
+.dark .border-gray-200 {
+  border-color: #4B5563;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #374151;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #4B5563;
+}
+
 body {
   margin: 0;
   display: flex;

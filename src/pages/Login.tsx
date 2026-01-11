@@ -90,14 +90,6 @@ export default function Login() {
                                     >
                                         Publisher
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('admin' as any)}
-                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'admin' as any ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'
-                                            }`}
-                                    >
-                                        Admin
-                                    </button>
                                 </div>
 
                                 {role === 'learner' && (

@@ -3,16 +3,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LessonService, type Lesson } from '../services/lessonService';
 import LessonEditor from '../components/LessonEditor';
-import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp } from 'lucide-react';
+import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp, Upload, Moon, Sun } from 'lucide-react';
+import { parseCSV } from '../utils/csvParser';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function AdminDashboard() {
     const { logout, currentUser } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
     const [showEditor, setShowEditor] = useState(false);
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
     const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
+    const [uploadResult, setUploadResult] = useState<{ success: number, errors: string[] } | null>(null);
 
     useEffect(() => {
         loadLessons();
@@ -45,6 +49,31 @@ export default function AdminDashboard() {
             await LessonService.deleteLesson(lessonId);
             await loadLessons();
         }
+    };
+
+    const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !currentUser) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const csvText = e.target?.result as string;
+            const { lessons, errors: parseErrors } = parseCSV(csvText, currentUser.uid);
+
+            if (parseErrors.length > 0 && lessons.length === 0) {
+                setUploadResult({ success: 0, errors: parseErrors });
+                return;
+            }
+
+            const result = await LessonService.createLessonsFromCSV(lessons);
+            setUploadResult({
+                success: result.success,
+                errors: [...parseErrors, ...result.errors]
+            });
+            await loadLessons();
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input
     };
 
     const handleToggleActive = async (lesson: Lesson) => {
@@ -94,12 +123,21 @@ export default function AdminDashboard() {
                             Linguist <span className="text-brand-yellow font-medium ml-2">Admin</span>
                         </h1>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
+                            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        >
+                            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -172,13 +210,32 @@ export default function AdminDashboard() {
                             Drafts ({stats.draft})
                         </button>
                     </div>
-                    <button
-                        onClick={handleNewLesson}
-                        className="px-6 py-3 bg-brand-yellow text-brand-dark rounded-xl font-bold shadow-lg shadow-brand-yellow/20 hover:shadow-xl transition-all flex items-center gap-2"
-                    >
-                        <Plus className="w-5 h-5" />
-                        New Lesson
-                    </button>
+                    <div className="flex gap-3">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleCSVUpload}
+                            className="hidden"
+                            id="csv-upload"
+                        />
+                        <label
+                            htmlFor="csv-upload"
+                            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all cursor-pointer flex items-center gap-2"
+                        >
+                            <Upload className="w-5 h-5" />
+                            Import CSV
+                        </label>
+                        <button
+                            onClick={() => {
+                                setEditingLesson(null);
+                                setShowEditor(true);
+                            }}
+                            className="px-6 py-3 bg-brand-yellow text-brand-dark rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                        >
+                            <Plus className="w-5 h-5" />
+                            New Lesson
+                        </button>
+                    </div>
                 </div>
 
                 {/* Lessons Table */}
@@ -316,6 +373,41 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* CSV Upload Result Modal */}
+            {uploadResult && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+                    <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold text-brand-dark mb-4">CSV Upload Results</h2>
+                        <div className="mb-6">
+                            <p className="text-lg">
+                                <span className="font-bold text-green-600">{uploadResult.success}</span> lessons created successfully
+                            </p>
+                            {uploadResult.errors.length > 0 && (
+                                <p className="text-lg">
+                                    <span className="font-bold text-red-600">{uploadResult.errors.length}</span> errors encountered
+                                </p>
+                            )}
+                        </div>
+                        {uploadResult.errors.length > 0 && (
+                            <div className="mb-6">
+                                <h3 className="font-bold text-gray-700 mb-2">Errors:</h3>
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 max-h-60 overflow-y-auto">
+                                    {uploadResult.errors.map((error, i) => (
+                                        <p key={i} className="text-sm text-red-700 mb-1">{error}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => setUploadResult(null)}
+                            className="w-full px-6 py-3 bg-brand-dark text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Editor Modal */}
             {showEditor && currentUser && (

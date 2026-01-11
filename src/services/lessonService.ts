@@ -112,6 +112,25 @@ export const LessonService = {
     },
 
     /**
+     * Create multiple lessons from CSV (Admin only)
+     */
+    async createLessonsFromCSV(lessons: Omit<Lesson, 'id' | 'createdAt'>[]): Promise<{ success: number, errors: string[] }> {
+        const errors: string[] = [];
+        let success = 0;
+
+        for (let i = 0; i < lessons.length; i++) {
+            try {
+                await this.createLesson(lessons[i]);
+                success++;
+            } catch (e) {
+                errors.push(`Lesson ${i + 1} (${lessons[i].title}): ${e instanceof Error ? e.message : 'Unknown error'}`);
+            }
+        }
+
+        return { success, errors };
+    },
+
+    /**
      * Get all lessons (Admin view)
      */
     async getAllLessons(): Promise<Lesson[]> {
