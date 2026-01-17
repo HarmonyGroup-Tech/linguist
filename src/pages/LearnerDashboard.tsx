@@ -3,11 +3,12 @@ import LessonView from '../components/LessonView';
 import SkillProgress from '../components/SkillProgress';
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
-import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun } from 'lucide-react';
+import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
+import { recommendNextLesson } from '../services/ai';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
@@ -22,6 +23,7 @@ export default function LearnerDashboard() {
     const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
     const [nextLingRefill, setNextLingRefill] = useState<string>('');
+    const [recommendation, setRecommendation] = useState<{ lesson: Lesson; reason: string } | null>(null);
 
     // Timer for ling refill
     useEffect(() => {
@@ -136,6 +138,38 @@ export default function LearnerDashboard() {
             // Reload lessons to update available list
             const lessons = await LessonService.getAvailableLessons(updatedSkills);
             setAvailableLessons(lessons);
+
+            // Get AI Recommendation
+            if (currentLesson.correctTranslation) {
+                // Map lessons for AI
+                const mappedLessons = lessons.map(l => {
+                    if (l.id) return {
+                        id: l.id,
+                        title: l.title,
+                        description: l.description,
+                        type: l.type
+                    };
+                    return null;
+                }).filter(l => l !== null) as { id: string; title: string; description: string; type: string }[];
+
+                const recommendationResult = await recommendNextLesson(
+                    currentLesson.title,
+                    currentLesson.description,
+                    userTranslation,
+                    currentLesson.correctTranslation,
+                    mappedLessons
+                );
+
+                if (recommendationResult) {
+                    const recommendedLesson = lessons.find(l => l.id === recommendationResult.recommendedLessonId);
+                    if (recommendedLesson) {
+                        setRecommendation({
+                            lesson: recommendedLesson,
+                            reason: recommendationResult.reason
+                        });
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error completing lesson:', error);
         }
@@ -211,6 +245,74 @@ export default function LearnerDashboard() {
             </header>
 
             <main className="py-12 px-6 max-w-7xl mx-auto">
+                {/* Review & Recommendation Modal */}
+                <AnimatePresence>
+                    {recommendation && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-white/20 relative overflow-hidden"
+                            >
+                                {/* Decorative Background Blob */}
+                                <div className="absolute -top-20 -right-20 w-64 h-64 bg-brand-yellow/20 rounded-full blur-3xl pointer-events-none" />
+
+                                <div className="relative z-10">
+                                    <div className="w-16 h-16 bg-brand-yellow rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-yellow/20 mx-auto">
+                                        <Sparkles className="w-8 h-8 text-brand-dark" />
+                                    </div>
+
+                                    <h3 className="text-2xl font-bold text-center text-brand-dark dark:text-white mb-2">
+                                        AI Recommendation
+                                    </h3>
+                                    <p className="text-center text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                                        Based on your recent performance, here is the best next step for you.
+                                    </p>
+
+                                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-start gap-4 mb-4">
+                                            <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm text-2xl shrink-0">
+                                                🎯
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-brand-dark dark:text-white text-lg">
+                                                    {recommendation.lesson.title}
+                                                </h4>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    Level {recommendation.lesson.level} • {recommendation.lesson.category === 'quotation' ? 'Workout' : 'Standard Lesson'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-600 dark:text-gray-300 italic bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                                            "{recommendation.reason}"
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            onClick={() => {
+                                                handleLessonSelect(recommendation.lesson);
+                                                setRecommendation(null);
+                                            }}
+                                            className="w-full py-4 bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Play className="w-5 h-5 fill-current" />
+                                            Start Recommended Lesson
+                                        </button>
+                                        <button
+                                            onClick={() => setRecommendation(null)}
+                                            className="w-full py-4 text-gray-500 font-bold hover:text-brand-dark dark:hover:text-white transition-colors"
+                                        >
+                                            Maybe Later
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
                 {/* Level Up Celebration */}
                 <AnimatePresence>
                     {showCelebration && (

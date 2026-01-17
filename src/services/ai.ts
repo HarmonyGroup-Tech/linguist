@@ -102,7 +102,82 @@ The JSON must follow this exact structure:
 
         // Return a random mock lesson
         return mockLessons[Math.floor(Math.random() * mockLessons.length)];
-        // Return a random mock lesson
-        return mockLessons[Math.floor(Math.random() * mockLessons.length)];
+    }
+}
+
+export async function recommendNextLesson(
+    completedLessonTitle: string,
+    completedLessonDescription: string,
+    userAnswer: string,
+    correctAnswer: string,
+    availableLessons: { id: string; title: string; description: string; type: string }[]
+): Promise<{ recommendedLessonId: string; reason: string } | null> {
+    try {
+        // Filter available lessons to a manageable size (e.g., top 10) to avoid token limits
+        const candidateLessons = availableLessons.slice(0, 10).map(l => ({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+            type: l.type
+        }));
+
+        if (candidateLessons.length === 0) return null;
+
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "mistralai/Mistral-7B-Instruct-v0.2",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a helpful language tutor. A user just completed a lesson. Analyze their performance and recommend the best next lesson from the provided list.
+                        
+CRITICAL: You MUST respond with ONLY valid JSON - no markdown, no code blocks.
+
+Structure:
+{
+  "recommendedLessonId": "id_of_the_lesson",
+  "reason": "Short explanation of why this lesson is good based on their mistakes or need for new topics."
+}`
+                    },
+                    {
+                        "role": "user",
+                        "content": `
+User just completed: "${completedLessonTitle}" (${completedLessonDescription}).
+Correct Answer: "${correctAnswer}"
+User Answer: "${userAnswer}"
+
+Analyze if they made mistakes (typos, grammar, wrong words).
+If they made mistakes, find a lesson that helps practice that.
+If they were perfect, suggest a lesson that introduces new related concepts or is slightly harder.
+Do NOT recommend lessons that are not in the list.
+
+Available Lessons:
+${JSON.stringify(candidateLessons)}
+
+Respond with JSON.`
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            console.error("AI Recommendation API failed");
+            return null;
+        }
+
+        const data = await response.json();
+        if (!data || !data.choices || !data.choices.length) return null;
+
+        let content = data.choices[0].message.content;
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+        return JSON.parse(content);
+    } catch (error) {
+        console.error("Error getting recommendation:", error);
+        return null;
     }
 }
