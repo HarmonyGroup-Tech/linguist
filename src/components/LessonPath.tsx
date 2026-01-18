@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Lock, Check, Play, Star, Diamond } from 'lucide-react';
+import { Lock, Check, Play, Star, Diamond, Sparkles } from 'lucide-react';
 import { Lesson, UserSkills, LessonService } from '../services/lessonService';
 
 interface LessonPathProps {
@@ -118,6 +118,12 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect, lings 
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${status === 'locked' ? 'bg-white/50 text-gray-500' : 'bg-white/30 ' + config.textColor}`}>
                                             Level {lesson.level}
                                         </span>
+                                        {lesson.isAiGenerated && (
+                                            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-yellow-400 text-brand-dark rounded-full font-black uppercase tracking-wider shadow-sm">
+                                                <Sparkles className="w-2.5 h-2.5" />
+                                                Personalized
+                                            </span>
+                                        )}
                                         {status === 'no-lings' && (
                                             <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">
                                                 <Diamond className="w-3 h-3 fill-current" />
@@ -128,7 +134,7 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect, lings 
 
                                     {lesson.description && (
                                         <p className={`text-sm ${status === 'locked' ? 'text-gray-400' : config.textColor} opacity-90`}>
-                                            {lesson.description}
+                                            {lesson.isAiGenerated ? `Remedial practice: ${lesson.description}` : lesson.description}
                                         </p>
                                     )}
 

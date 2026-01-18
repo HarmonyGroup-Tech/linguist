@@ -180,8 +180,15 @@ export const LessonService = {
                 } as Lesson;
             });
 
-            // Sort by order 
-            allLessons.sort((a, b) => a.order - b.order);
+            // Sort by AI priority first, then order
+            allLessons.sort((a, b) => {
+                // If one is AI and other isn't, AI comes first
+                if (a.isAiGenerated && !b.isAiGenerated) return -1;
+                if (!a.isAiGenerated && b.isAiGenerated) return 1;
+
+                // If both are same AI status, use order
+                return (a.order || 0) - (b.order || 0);
+            });
 
             // Return ALL active lessons so the UI can show the full path (completed, available, locked)
             return allLessons;

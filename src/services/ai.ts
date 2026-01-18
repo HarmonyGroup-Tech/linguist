@@ -243,8 +243,9 @@ export async function generatePersonalizedLesson(
         });
 
         if (!response.ok) {
-            console.error("AI Generation API failed");
-            return null;
+            const errorText = await response.text();
+            console.error(`AI Generation API failed: ${response.status} ${response.statusText}`, errorText);
+            throw new Error(`AI Generation API failed: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
