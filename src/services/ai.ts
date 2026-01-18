@@ -181,3 +181,95 @@ Respond with JSON.`
         return null;
     }
 }
+
+/**
+ * Generates a completely NEW lesson based on user's specific mistakes.
+ */
+export async function generatePersonalizedLesson(
+    mistakes: string[],
+    userLevel: string = "Intermediate",
+    topic: string = "General"
+): Promise<any | null> {
+    try {
+        console.log("Generating personalized lesson for mistakes:", mistakes);
+
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "mistralai/Mistral-7B-Instruct-v0.2",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are an expert language curriculum designer. 
+                        Create a structured lesson to help a student fix specific mistakes.
+                        
+                        CRITICAL: Respond with ONLY valid JSON.
+                        
+                        JSON Structure:
+                        {
+                          "title": "Short title focusing on the concept",
+                          "description": "Brief description of what this lesson practices",
+                          "language": "Spanish",
+                          "level": 5,
+                          "type": "text-input",
+                          "category": "standard",
+                          "context": "A short paragraph (2-3 sentences) in Spanish that uses the concept correctly.",
+                          "targetSentence": "One sentence from the context that the user must translate.",
+                          "correctTranslation": "The English translation of the target sentence.",
+                          "vocabularyGain": 5,
+                          "grammarGain": 15,
+                          "readingGain": 5,
+                          "writingGain": 10,
+                          "xpReward": 20,
+                          "generatedFromMistakes": ["mistake 1", "mistake 2"]
+                        }`
+                    },
+                    {
+                        "role": "user",
+                        "content": `Student's Recent Mistakes: 
+                        ${mistakes.map(m => `- ${m}`).join('\n')}
+                        
+                        Current Level: ${userLevel}
+                        Topic Context: ${topic}
+                        
+                        Create a lesson that specifically addresses these errors. 
+                        Ensure the content is appropriate for the level.`
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            console.error("AI Generation API failed");
+            return null;
+        }
+
+        const data = await response.json();
+        if (!data || !data.choices || !data.choices.length) return null;
+
+        let content = data.choices[0].message.content;
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+        const lessonData = JSON.parse(content);
+
+        // Add required default fields that AI might miss or get wrong
+        return {
+            ...lessonData,
+            isActive: true, // Auto-activate
+            order: 999, // Put at the end or handle sorting later
+            requiredVocabulary: 0,
+            requiredGrammar: 0,
+            requiredReading: 0,
+            requiredWriting: 0,
+            isAiGenerated: true,
+            generatedFromMistakes: mistakes
+        };
+
+    } catch (error) {
+        console.error("Error generating personalized lesson:", error);
+        return null; // Fail gracefully
+    }
+}

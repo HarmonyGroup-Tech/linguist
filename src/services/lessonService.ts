@@ -27,6 +27,10 @@ export interface Lesson {
     category: 'standard' | 'quotation';
     scrambledOptions?: string[]; // For drag-drop lessons
 
+    // AI Generation Fields
+    isAiGenerated?: boolean;
+    generatedFromMistakes?: string[]; // List of mistakes that triggered this lesson
+
     // Content
     context: string;
     targetSentence: string;
