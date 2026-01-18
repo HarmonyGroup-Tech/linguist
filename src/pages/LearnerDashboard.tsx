@@ -148,6 +148,13 @@ export default function LearnerDashboard() {
             const normalizedCorrect = currentLesson.correctTranslation?.trim().toLowerCase();
             const isCorrect = normalizedUser === normalizedCorrect;
 
+            console.log("Mistake Check:", {
+                user: normalizedUser,
+                correct: normalizedCorrect,
+                isCorrect,
+                hasCorrectTranslation: !!currentLesson.correctTranslation
+            });
+
             if (!isCorrect && currentLesson.correctTranslation) {
                 // 1. GENERATE PERSONALIZED LESSON
                 console.log("Mistake detected, generating personalized lesson...");
@@ -468,7 +475,72 @@ export default function LearnerDashboard() {
                         </div>
 
                         {activeTab === 'path' ? (
-                            <div>
+                            <div className="space-y-8">
+                                {/* Infinite Learning / Empty State */}
+                                {availableLessons.filter(l => !l.category || l.category === 'standard').every(l => userSkills.completedLessons.includes(l.id!)) && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-gradient-to-r from-brand-dark to-gray-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                                        <div className="relative z-10">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                                                    <Sparkles className="w-6 h-6 text-yellow-400" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-2xl font-bold">Path Completed!</h3>
+                                                    <p className="text-gray-300">You've finished all standard lessons.</p>
+                                                </div>
+                                            </div>
+
+                                            <p className="mb-6 text-gray-200 max-w-lg">
+                                                Don't stop now! The AI can generate infinite new lessons tailored to your level to keep your streak alive.
+                                            </p>
+
+                                            <button
+                                                onClick={() => {
+                                                    setIsGenerating(true);
+                                                    import('../services/ai').then(async ({ generatePersonalizedLesson }) => {
+                                                        try {
+                                                            const newLessonData = await generatePersonalizedLesson(
+                                                                ["User requested advanced practice"],
+                                                                "Advanced", // Auto-scale ideally
+                                                                "General Practice"
+                                                            );
+
+                                                            if (newLessonData) {
+                                                                const newLessonId = await LessonService.createLesson({
+                                                                    ...newLessonData,
+                                                                    createdBy: 'AI_TUTOR',
+                                                                    createdAt: new Date(),
+                                                                    active: true
+                                                                } as any);
+
+                                                                const fullLesson = { ...newLessonData, id: newLessonId };
+                                                                setRecommendation({
+                                                                    lesson: fullLesson,
+                                                                    reason: "Here is a fresh lesson to keep you moving forward!"
+                                                                });
+                                                            }
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                        } finally {
+                                                            setIsGenerating(false);
+                                                        }
+                                                    });
+                                                }}
+                                                className="px-6 py-3 bg-white text-brand-dark font-bold rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-2"
+                                            >
+                                                <Play className="w-5 h-5 fill-current" />
+                                                Generate New Lesson
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 <LessonPath
                                     lessons={availableLessons.filter(l => !l.category || l.category === 'standard')}
                                     userSkills={userSkills}
