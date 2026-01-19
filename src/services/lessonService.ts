@@ -15,6 +15,15 @@ import {
 } from 'firebase/firestore';
 
 // --- Types ---
+export interface Exercise {
+    type: 'text-input' | 'drag-drop';
+    context: string;
+    targetSentence: string;
+    correctTranslation: string;
+    scrambledOptions?: string[]; // For drag-drop
+    isNewVocabulary?: boolean; // If true, AI should prioritize drag-drop
+}
+
 export interface Lesson {
     id?: string;
     title: string;
@@ -22,19 +31,21 @@ export interface Lesson {
     language: string;
     level: number; // 1-10 difficulty
 
-    // NEW FIELDS for Expanded Lesson System
+    // Content (Backward compatibility + Single Exercise support)
     type: 'text-input' | 'drag-drop';
-    category: 'standard' | 'quotation';
-    scrambledOptions?: string[]; // For drag-drop lessons
-
-    // AI Generation Fields
-    isAiGenerated?: boolean;
-    generatedFromMistakes?: string[]; // List of mistakes that triggered this lesson
-
-    // Content
+    category: 'standard' | 'quotation' | 'client-request';
+    scrambledOptions?: string[];
     context: string;
     targetSentence: string;
     correctTranslation: string;
+
+    // Multiple Exercises
+    exercises?: Exercise[];
+
+    // AI Generation Fields
+    isAiGenerated?: boolean;
+    generatedFromMistakes?: string[];
+
     sourceTitle?: string;
     sourceAuthor?: string;
 
@@ -71,6 +82,7 @@ export interface UserSkills {
     lings: number;          // Current balance (0-5)
     lastLingRefill: string; // ISO Date string
     targetLanguage: string; // The language the user is learning (e.g., German, Spanish)
+    lessonsSinceLastClient: number; // Counter for client-work triggers
 }
 
 // --- Lesson Service ---
@@ -290,7 +302,8 @@ export const UserSkillsService = {
                     completedLessons: [],
                     lings: 5, // Start with full lings
                     lastLingRefill: new Date().toISOString(),
-                    targetLanguage: "German" // Default for now, ideally selected at signup
+                    targetLanguage: "German", // Default for now, ideally selected at signup
+                    lessonsSinceLastClient: 0
                 };
 
                 // Create the document
@@ -312,7 +325,8 @@ export const UserSkillsService = {
                 completedLessons: [],
                 lings: 5,
                 lastLingRefill: new Date().toISOString(),
-                targetLanguage: "German"
+                targetLanguage: "German",
+                lessonsSinceLastClient: 0
             };
         }
     },
@@ -367,7 +381,8 @@ export const UserSkillsService = {
                 completedLessons,
                 lings: currentSkills.lings,
                 lastLingRefill: currentSkills.lastLingRefill,
-                targetLanguage: currentSkills.targetLanguage || "German"
+                targetLanguage: currentSkills.targetLanguage || "German",
+                lessonsSinceLastClient: (currentSkills.lessonsSinceLastClient || 0) + 1
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);
@@ -401,7 +416,8 @@ export const UserSkillsService = {
                     completedLessons: [],
                     lings: 5,
                     lastLingRefill: new Date().toISOString(),
-                    targetLanguage: "German"
+                    targetLanguage: "German",
+                    lessonsSinceLastClient: 0
                 };
 
                 // Use setDoc for new document
@@ -413,11 +429,17 @@ export const UserSkillsService = {
                     await updateDoc(userSkillsRef, {
                         lings: 5,
                         lastLingRefill: new Date().toISOString(),
-                        targetLanguage: data.targetLanguage || "German"
+                        targetLanguage: data.targetLanguage || "German",
+                        lessonsSinceLastClient: data.lessonsSinceLastClient || 0
                     } as any);
                 } else if (typeof data.targetLanguage === 'undefined') {
                     await updateDoc(userSkillsRef, {
-                        targetLanguage: "German"
+                        targetLanguage: "German",
+                        lessonsSinceLastClient: 0
+                    } as any);
+                } else if (typeof data.lessonsSinceLastClient === 'undefined') {
+                    await updateDoc(userSkillsRef, {
+                        lessonsSinceLastClient: 0
                     } as any);
                 }
             }
@@ -485,5 +507,18 @@ export const UserSkillsService = {
             return true;
         }
         return false;
+    },
+
+    /**
+     * Update arbitrary skills fields
+     */
+    async updateSkills(userId: string, updates: Partial<UserSkills>): Promise<void> {
+        try {
+            const userSkillsRef = doc(db, 'userSkills', userId);
+            await updateDoc(userSkillsRef, updates as any);
+        } catch (e) {
+            console.error("Error updating user skills:", e);
+            throw e;
+        }
     }
 };

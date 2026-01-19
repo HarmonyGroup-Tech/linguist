@@ -7,8 +7,13 @@ import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sp
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
-import { UserSkillsService, LessonService, type Lesson, type UserSkills } from '../services/lessonService';
-import { recommendNextLesson } from '../services/ai';
+import {
+    Lesson,
+    UserSkills,
+    LessonService,
+    UserSkillsService
+} from '../services/lessonService';
+import { generatePersonalizedLesson } from '../services/ai';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
@@ -22,8 +27,7 @@ export default function LearnerDashboard() {
     const [showCelebration, setShowCelebration] = useState(false);
     const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
-    const [nextLingRefill, setNextLingRefill] = useState<string>('');
-    const [recommendation, setRecommendation] = useState<{ lesson: Lesson; reason: string } | null>(null);
+    const [nextLingRefill, setNextLingRefill] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Timer for ling refill
@@ -140,102 +144,19 @@ export default function LearnerDashboard() {
             const lessons = await LessonService.getAvailableLessons(updatedSkills);
             setAvailableLessons(lessons);
 
-            // AI Logic: Decision Branch
-            // If user made a mistake (simple string comparison for now), generate a NEW lesson.
-            // If user was correct, recommend an EXISTING lesson.
+            // Decision: After completing, we just reload and let the user click "Start Next Lesson" 
+            // OR the horizontal path will show the next one clearly.
+            // Simplified: No automatic popup since the UX should be "clean".
 
-            const normalizedUser = userTranslation.trim().toLowerCase();
-            const normalizedCorrect = currentLesson.correctTranslation?.trim().toLowerCase();
-            const isCorrect = normalizedUser === normalizedCorrect;
-
-            console.log("Mistake Check:", {
-                user: normalizedUser,
-                correct: normalizedCorrect,
-                isCorrect,
-                hasCorrectTranslation: !!currentLesson.correctTranslation
-            });
-
-            if (!isCorrect && currentLesson.correctTranslation) {
-                // 1. GENERATE PERSONALIZED LESSON
-                console.log("Mistake detected, generating personalized lesson...");
-                setIsGenerating(true);
-
-                import('../services/ai').then(async ({ generatePersonalizedLesson }) => {
-                    try {
-                        const newLessonData = await generatePersonalizedLesson(
-                            [`Expected: "${currentLesson.correctTranslation}" but got: "${userTranslation}"`],
-                            `Level ${userSkills.vocabulary > 20 ? 'Intermediate' : 'Beginner'} (XP: ${userSkills.totalXP})`,
-                            currentLesson.title,
-                            userSkills.targetLanguage || "German"
-                        );
-
-                        if (newLessonData) {
-                            // Save the new lesson
-                            const newLessonId = await LessonService.createLesson({
-                                ...newLessonData,
-                                createdBy: 'AI_TUTOR',
-                                createdAt: new Date(),
-                                // Ensure defaults
-                                isActive: true
-                            } as any);
-
-                            const fullLesson = { ...newLessonData, id: newLessonId };
-
-                            setRecommendation({
-                                lesson: fullLesson,
-                                reason: "We noticed you struggled with this. Here is a custom lesson to help you master it!"
-                            });
-                        } else {
-                            // Fallback to standard recommendation if generation fails
-                            await runStandardRecommendation(lessons);
-                        }
-                    } catch (error) {
-                        console.error("Error in personalized generation:", error);
-                        await runStandardRecommendation(lessons);
-                    } finally {
-                        setIsGenerating(false);
-                    }
+            // Reset client counter if it was a client request
+            if (currentLesson.category === 'client-request') {
+                await UserSkillsService.updateSkills(currentUser.uid, {
+                    lessonsSinceLastClient: 0
                 });
-
-            } else {
-                // 2. STANDARD RECOMMENDATION (Existing Logic)
-                await runStandardRecommendation(lessons);
             }
 
         } catch (error) {
             console.error('Error completing lesson:', error);
-        }
-    };
-
-    const runStandardRecommendation = async (lessons: Lesson[]) => {
-        if (!currentLesson || !currentLesson.correctTranslation) return;
-
-        const mappedLessons = lessons.map(l => {
-            if (l.id) return {
-                id: l.id,
-                title: l.title,
-                description: l.description,
-                type: l.type
-            };
-            return null;
-        }).filter(l => l !== null) as { id: string; title: string; description: string; type: string }[];
-
-        const recommendationResult = await recommendNextLesson(
-            currentLesson.title,
-            currentLesson.description,
-            "Correct", // Assumption since we are in the 'else' block or fallback
-            currentLesson.correctTranslation,
-            mappedLessons
-        );
-
-        if (recommendationResult) {
-            const recommendedLesson = lessons.find(l => l.id === recommendationResult.recommendedLessonId);
-            if (recommendedLesson) {
-                setRecommendation({
-                    lesson: recommendedLesson,
-                    reason: recommendationResult.reason
-                });
-            }
         }
     };
 
@@ -333,74 +254,6 @@ export default function LearnerDashboard() {
                     )}
                 </AnimatePresence>
 
-                {/* Review & Recommendation Modal */}
-                <AnimatePresence>
-                    {recommendation && !isGenerating && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="bg-white dark:bg-gray-800 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-white/20 relative overflow-hidden"
-                            >
-                                {/* Decorative Background Blob */}
-                                <div className="absolute -top-20 -right-20 w-64 h-64 bg-brand-yellow/20 rounded-full blur-3xl pointer-events-none" />
-
-                                <div className="relative z-10">
-                                    <div className="w-16 h-16 bg-brand-yellow rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-yellow/20 mx-auto">
-                                        <Sparkles className="w-8 h-8 text-brand-dark" />
-                                    </div>
-
-                                    <h3 className="text-2xl font-bold text-center text-brand-dark dark:text-white mb-2">
-                                        AI Recommendation
-                                    </h3>
-                                    <p className="text-center text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                                        Based on your recent performance, here is the best next step for you.
-                                    </p>
-
-                                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-700">
-                                        <div className="flex items-start gap-4 mb-4">
-                                            <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm text-2xl shrink-0">
-                                                🎯
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-brand-dark dark:text-white text-lg">
-                                                    {recommendation.lesson.title}
-                                                </h4>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    Level {recommendation.lesson.level} • {recommendation.lesson.category === 'quotation' ? 'Workout' : 'Standard Lesson'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-gray-600 dark:text-gray-300 italic bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                                            "{recommendation.reason}"
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        <button
-                                            onClick={() => {
-                                                handleLessonSelect(recommendation.lesson);
-                                                setRecommendation(null);
-                                            }}
-                                            className="w-full py-4 bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Play className="w-5 h-5 fill-current" />
-                                            Start Recommended Lesson
-                                        </button>
-                                        <button
-                                            onClick={() => setRecommendation(null)}
-                                            className="w-full py-4 text-gray-500 font-bold hover:text-brand-dark dark:hover:text-white transition-colors"
-                                        >
-                                            Maybe Later
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
-
                 {/* Level Up Celebration */}
                 <AnimatePresence>
                     {showCelebration && (
@@ -464,13 +317,25 @@ export default function LearnerDashboard() {
                                     // 2. Otherwise generate a new one
                                     setIsGenerating(true);
                                     try {
-                                        const { generatePersonalizedLesson } = await import('../services/ai');
-                                        const newLessonData = await generatePersonalizedLesson(
-                                            [], // No new mistakes, just progression
-                                            "Absolute Beginner",
-                                            "Introduction",
-                                            userSkills.targetLanguage || "German"
-                                        );
+                                        const { generatePersonalizedLesson, generateClientRequest } = await import('../services/ai');
+
+                                        // Trigger Client Work every 3-7 lessons if level > 2
+                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP > 100);
+
+                                        let newLessonData;
+                                        if (shouldTriggerClient) {
+                                            newLessonData = await generateClientRequest(userSkills.targetLanguage || "German");
+                                        }
+
+                                        // Fallback or standard generation
+                                        if (!newLessonData) {
+                                            newLessonData = await generatePersonalizedLesson(
+                                                [], // No new mistakes, just progression
+                                                "Absolute Beginner",
+                                                "Introduction",
+                                                userSkills.targetLanguage || "German"
+                                            );
+                                        }
 
                                         if (newLessonData) {
                                             const newLessonId = await LessonService.createLesson({
@@ -506,6 +371,6 @@ export default function LearnerDashboard() {
                     </div>
                 )}
             </main>
-        </div>
+        </div >
     );
 }

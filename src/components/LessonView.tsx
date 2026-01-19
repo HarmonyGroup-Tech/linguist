@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { Book, RefreshCw, Send, Sparkles, CheckCircle2 } from 'lucide-react';
 
-import { Lesson } from '../services/lessonService';
+import { Lesson, Exercise } from '../services/lessonService';
 import DragDropView from './DragDropView';
 
 interface LessonViewProps {
@@ -12,70 +12,92 @@ interface LessonViewProps {
 }
 
 export default function LessonView({ lesson, onComplete, loading }: LessonViewProps) {
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    // Reset submitted state when lesson changes
+    // List of exercises: if provided, use them; otherwise, create a virtual one from legacy fields
+    const exercises: Exercise[] = lesson.exercises && lesson.exercises.length > 0
+        ? lesson.exercises
+        : [{
+            type: lesson.type,
+            context: lesson.context,
+            targetSentence: lesson.targetSentence,
+            correctTranslation: lesson.correctTranslation,
+            scrambledOptions: lesson.scrambledOptions
+        }];
+
+    const currentExercise = exercises[currentExerciseIndex];
+
+    // Reset state when lesson or exercise changes
     useEffect(() => {
         setSubmitted(false);
         setShowSuccess(false);
         setInput('');
-    }, [lesson.id]);
+    }, [lesson.id, currentExerciseIndex]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
-        handleComplete(input);
+        handleStepComplete(input);
     };
 
-    const handleComplete = (answer: string) => {
+    const handleStepComplete = (answer: string) => {
         setSubmitted(true);
 
-        // Show checking animation, then success, then load next
         setTimeout(() => {
             setShowSuccess(true);
             setTimeout(async () => {
-                await onComplete(answer);
-            }, 1500); // Wait to show success before loading next
+                if (currentExerciseIndex < exercises.length - 1) {
+                    setCurrentExerciseIndex(prev => prev + 1);
+                } else {
+                    await onComplete(answer);
+                }
+            }, 1200);
         }, 800);
     };
 
-    if (lesson.type === 'drag-drop') {
+    if (currentExercise.type === 'drag-drop') {
         return (
-            <DragDropView
-                lesson={lesson}
-                onComplete={handleComplete}
-                loading={loading}
-            />
+            <div className="space-y-6">
+                <ProgressHeader index={currentExerciseIndex} total={exercises.length} category={lesson.category} />
+                <DragDropView
+                    lesson={{ ...lesson, ...currentExercise } as any}
+                    onComplete={handleStepComplete}
+                    loading={loading}
+                />
+            </div>
         );
     }
 
-    // Highlight target sentence in context
-    const parts = lesson.context.split(lesson.targetSentence);
+    const parts = currentExercise.context.split(currentExercise.targetSentence);
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
-            <div className="bg-white rounded-[2.5rem] p-10 shadow-xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+            <ProgressHeader index={currentExerciseIndex} total={exercises.length} category={lesson.category} />
+
+            <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-10 shadow-xl border border-gray-100 dark:border-gray-700 relative overflow-hidden">
                 {/* Header Info */}
-                <div className="flex items-center justify-between text-gray-400 text-sm font-medium mb-8 border-b border-gray-100 pb-6">
+                <div className="flex items-center justify-between text-gray-400 text-sm font-medium mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
                     <div className="flex items-center gap-2">
                         <Book className="w-4 h-4 text-brand-yellow" />
-                        <span className="text-brand-dark">{lesson.sourceTitle} <span className="text-gray-400 font-normal">by</span> {lesson.sourceAuthor}</span>
+                        <span className="text-brand-dark dark:text-gray-200">
+                            {lesson.category === 'client-request' ? 'Official Correspondence' : (lesson.sourceTitle || 'Grammar Practice')}
+                        </span>
                     </div>
-                    {lesson.isAiGenerated && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-brand-dark text-xs font-bold uppercase tracking-wider rounded-lg border border-yellow-100">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Personalized
+                    {lesson.category === 'client-request' && (
+                        <div className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold uppercase rounded-lg border border-blue-100">
+                            High Priority Client
                         </div>
                     )}
                 </div>
 
                 {/* Context Display */}
-                <div className="text-xl leading-relaxed text-gray-600 font-serif mb-10">
+                <div className="text-xl leading-relaxed text-gray-600 dark:text-gray-300 font-serif mb-10">
                     {parts[0]}
-                    <span className="bg-brand-yellow/30 text-brand-dark font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50">
-                        {lesson.targetSentence}
+                    <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50">
+                        {currentExercise.targetSentence}
                     </span>
                     {parts[1]}
                 </div>
@@ -83,15 +105,14 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                 {/* Interaction Area */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="flex items-center gap-2 text-sm font-bold text-brand-dark mb-3">
+                        <label className="flex items-center gap-2 text-sm font-bold text-brand-dark dark:text-gray-200 mb-3">
                             <Sparkles className="w-4 h-4 text-brand-yellow" />
                             Your Translation
                         </label>
 
                         <div className="relative group">
-                            <div className="absolute inset-0 bg-brand-yellow/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity -z-10" />
                             <textarea
-                                className="w-full p-6 bg-gray-50 border-2 border-transparent focus:border-brand-yellow rounded-2xl text-brand-dark placeholder-gray-400 focus:outline-none focus:bg-white transition-all resize-none h-40 text-lg shadow-inner"
+                                className="w-full p-6 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-brand-yellow rounded-2xl text-brand-dark dark:text-white placeholder-gray-400 focus:outline-none transition-all resize-none h-40 text-lg"
                                 placeholder="Type your translation here..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
@@ -101,41 +122,32 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                             <AnimatePresence>
                                 {submitted && (
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10"
                                     >
                                         {showSuccess ? (
                                             <>
                                                 <motion.div
                                                     initial={{ scale: 0 }}
                                                     animate={{ scale: 1 }}
-                                                    transition={{ type: "spring", stiffness: 200 }}
-                                                    className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center"
+                                                    className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
                                                 >
-                                                    <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                    </svg>
+                                                    <CheckCircle2 className="w-10 h-10 text-green-600" />
                                                 </motion.div>
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="text-center"
-                                                >
-                                                    <p className="text-green-600 font-bold text-2xl mb-1">Great work!</p>
-                                                    <p className="text-gray-600 text-sm">+50 XP</p>
-                                                </motion.div>
+                                                <p className="text-green-600 font-bold text-xl">
+                                                    {currentExerciseIndex < exercises.length - 1 ? 'Moving to next step...' : 'Lesson Complete!'}
+                                                </p>
                                             </>
                                         ) : (
                                             <>
                                                 <motion.div
                                                     animate={{ rotate: 360 }}
                                                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                    className="p-3 bg-brand-yellow/20 rounded-full"
                                                 >
-                                                    <RefreshCw className="w-8 h-8 text-brand-dark" />
+                                                    <RefreshCw className="w-8 h-8 text-brand-yellow" />
                                                 </motion.div>
-                                                <p className="text-brand-dark font-bold text-lg">Checking your work...</p>
+                                                <p className="text-brand-dark dark:text-white font-bold">Checking work...</p>
                                             </>
                                         )}
                                     </motion.div>
@@ -144,17 +156,47 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                         </div>
                     </div>
 
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end">
                         <button
                             type="submit"
                             disabled={!input.trim() || submitted || loading}
-                            className="px-10 py-4 bg-brand-yellow text-brand-dark font-bold rounded-2xl shadow-lg shadow-brand-yellow/20 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] transition-all flex items-center gap-3 text-lg"
+                            className="px-10 py-4 bg-brand-yellow text-brand-dark font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-3 text-lg"
                         >
-                            Submit Translation <Send className="w-5 h-5" />
+                            {currentExerciseIndex < exercises.length - 1 ? 'Next Step' : 'Finish Lesson'}
+                            <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </form>
             </div>
+        </div>
+    );
+}
+
+function ProgressHeader({ index, total, category }: { index: number, total: number, category?: string }) {
+    return (
+        <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                    {Array.from({ length: total }).map((_, i) => (
+                        <div
+                            key={i}
+                            className={`h-2 rounded-full transition-all duration-500 ${i < index ? 'w-8 bg-green-500' :
+                                    i === index ? 'w-12 bg-brand-yellow shadow-[0_0_10px_rgba(255,204,0,0.5)]' :
+                                        'w-8 bg-gray-200 dark:bg-gray-700'
+                                }`}
+                        />
+                    ))}
+                </div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Step {index + 1} of {total}
+                </span>
+            </div>
+            {category === 'client-request' && (
+                <span className="flex items-center gap-1.5 text-xs font-black text-blue-600 animate-pulse">
+                    <Sparkles className="w-3.5 h-3.5 fill-current" />
+                    CLIENT WORK
+                </span>
+            )}
         </div>
     );
 }
