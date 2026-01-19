@@ -79,7 +79,7 @@ JSON Structure:
 /**
  * Generates a real-world client translation request.
  */
-export async function generateClientRequest(language: string = "German"): Promise<any | null> {
+export async function generateClientRequest(language: string = "German", userXP: number = 0): Promise<any | null> {
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -90,15 +90,20 @@ export async function generateClientRequest(language: string = "German"): Promis
                         "role": "system",
                         "content": `You are a translation agency. A global client needs a sentence translated from ${language} to English.
                         
-                        CRITICAL: Respond with ONLY valid JSON.
-                        The sentence should be relatively simple but sound formal/professional.
+                        CRITICAL rules:
+                        1. Respond with ONLY valid JSON.
+                        2. COMPLETELY ADAPT the length and complexity to the student's XP (${userXP}).
+                        3. If XP < 1000, the sentence should be extremely simple (Greetings, basic needs).
+                        4. ALL 'context' and instructions MUST be in ENGLISH.
+                        5. 'targetSentence' MUST be in ${language}.
+                        6. 'correctTranslation' MUST be in English.
                         
                         JSON Structure:
                         {
                           "title": "Client Request: [Client Name]",
-                          "description": "A formal message from a client needing translation help.",
-                          "context": "The formal request or message in ${language}.",
-                          "targetSentence": "The specific professional sentence to translate.",
+                          "description": "A formal message from a client needing translation help (English).",
+                          "context": "The formal request description in ENGLISH. (e.g. 'A traveler needs help saying goodbye')",
+                          "targetSentence": "The specific sentence in ${language}.",
                           "correctTranslation": "Accurate English translation.",
                           "xpReward": 100
                         }`

@@ -319,12 +319,12 @@ export default function LearnerDashboard() {
                                     try {
                                         const { generatePersonalizedLesson, generateClientRequest } = await import('../services/ai');
 
-                                        // Trigger Client Work every 3-7 lessons if level > 2
-                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP > 100);
+                                        // Trigger Client Work every 3-7 lessons if level > 5 (approx 500 XP)
+                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP >= 500);
 
                                         let newLessonData;
                                         if (shouldTriggerClient) {
-                                            newLessonData = await generateClientRequest(userSkills.targetLanguage || "German");
+                                            newLessonData = await generateClientRequest(userSkills.targetLanguage || "German", userSkills.totalXP);
                                         }
 
                                         // Fallback or standard generation
