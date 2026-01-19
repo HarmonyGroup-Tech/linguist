@@ -193,8 +193,16 @@ export const LessonService = {
                 } as Lesson;
             });
 
+            // Filter for user-specific lessons: 
+            // 1. Lessons created by 'ADMIN' (global)
+            // 2. Lessons created by the specific user (AI-generated for them)
+            const filteredLessons = allLessons.filter(lesson =>
+                lesson.createdBy === 'ADMIN' ||
+                lesson.createdBy === userSkills.userId
+            );
+
             // Sort by AI priority first, then order
-            allLessons.sort((a, b) => {
+            filteredLessons.sort((a, b) => {
                 // If one is AI and other isn't, AI comes first
                 if (a.isAiGenerated && !b.isAiGenerated) return -1;
                 if (!a.isAiGenerated && b.isAiGenerated) return 1;
@@ -204,7 +212,7 @@ export const LessonService = {
             });
 
             // Return ALL active lessons so the UI can show the full path (completed, available, locked)
-            return allLessons;
+            return filteredLessons;
         } catch (e) {
             console.error("Error fetching available lessons:", e);
             return [];

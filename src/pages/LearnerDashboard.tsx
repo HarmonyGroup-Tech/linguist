@@ -340,7 +340,7 @@ export default function LearnerDashboard() {
                                         if (newLessonData) {
                                             const newLessonId = await LessonService.createLesson({
                                                 ...newLessonData,
-                                                createdBy: 'AI_TUTOR',
+                                                createdBy: currentUser.uid,
                                                 createdAt: new Date(),
                                                 isActive: true
                                             } as any);
