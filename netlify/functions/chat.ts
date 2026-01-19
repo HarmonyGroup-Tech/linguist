@@ -42,8 +42,9 @@ export const handler: Handler = async (event: HandlerEvent) => {
             }
         }
 
-        // Using 'gemini-1.5-flash-latest' for stability
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+        // Using 'v1' instead of 'v1beta' for stable Gemini 1.5 Flash
+        // And standard 'gemini-1.5-flash' name
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         const response = await fetch(geminiUrl, {
             method: "POST",
@@ -54,6 +55,14 @@ export const handler: Handler = async (event: HandlerEvent) => {
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`Gemini Error (${response.status}):`, errorText);
+
+            // Diagnostics: If 404, try to list models to console for debugging
+            if (response.status === 404) {
+                const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`;
+                const modelsRes = await fetch(listUrl).then(r => r.json()).catch(() => ({}));
+                console.log("Available Models for this key:", JSON.stringify(modelsRes));
+            }
+
             throw new Error(`Gemini API Error: ${response.status} ${errorText}`);
         }
 
