@@ -15,8 +15,6 @@ export const handler: Handler = async (event: HandlerEvent) => {
             throw new Error("No API Configuration found (Missing GEMINI_API_KEY)");
         }
 
-        console.log("Attempting Gemini API...");
-
         // Convert OpenAI messages to Gemini Content
         let systemInstruction = "";
         const contents: any[] = [];
@@ -42,9 +40,10 @@ export const handler: Handler = async (event: HandlerEvent) => {
             }
         }
 
-        // Using 'v1' instead of 'v1beta' for stable Gemini 1.5 Flash
-        // And standard 'gemini-1.5-flash' name
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // Try gemini-1.5-flash-002 as it's a very stable specific version
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-002:generateContent?key=${GEMINI_API_KEY}`;
+
+        console.log("Calling Gemini:", geminiUrl);
 
         const response = await fetch(geminiUrl, {
             method: "POST",
@@ -54,16 +53,23 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`Gemini Error (${response.status}):`, errorText);
+            let details = errorText;
 
-            // Diagnostics: If 404, try to list models to console for debugging
+            // If 404, try to list models to help the user identify what's wrong
             if (response.status === 404) {
-                const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`;
-                const modelsRes = await fetch(listUrl).then(r => r.json()).catch(() => ({}));
-                console.log("Available Models for this key:", JSON.stringify(modelsRes));
+                try {
+                    const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${GEMINI_API_KEY}`;
+                    const modelsRes = await fetch(listUrl).then(r => r.json());
+                    details = `Model not found. Available models for your key: ${JSON.stringify(modelsRes)}`;
+                } catch (listError) {
+                    details = `${errorText} (Additionally, failed to fetch available models: ${String(listError)})`;
+                }
             }
 
-            throw new Error(`Gemini API Error: ${response.status} ${errorText}`);
+            return {
+                statusCode: response.status,
+                body: JSON.stringify({ error: `Gemini API Error: ${response.status}`, details })
+            };
         }
 
         const data = await response.json();
