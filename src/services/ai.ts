@@ -28,6 +28,7 @@ PEDAGOGICAL RULES:
 3. 'targetSentence' MUST be the ${language} translation.
 4. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
 5. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
+6. VOCABULARY SCAFFOLDING: 'text-input' exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. Never introduce a new word in a typing exercise. Give the user a chance to see the spelling in tiles first.
 
 JSON Structure:
 {
@@ -168,6 +169,7 @@ export async function generatePersonalizedLesson(
                         5. ALL instructions and 'context' MUST be in ENGLISH.
                         6. 'targetSentence' MUST be in ${language}.
                         7. 'correctTranslation' MUST be in English.
+                        8. SCAFFOLDING: Do not use a word in a 'text-input' exercise unless it was introduced in a 'drag-drop' exercise earlier in the three-step sequence. Introduction MUST come before typing practice.
                         
                         JSON Structure:
                         {
