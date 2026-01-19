@@ -7,7 +7,7 @@ export interface LessonResponse {
     targetSentence: string;
 }
 
-export async function generateLesson(topic: string, level: string, language: string = "German"): Promise<any> {
+export async function generateLesson(topic: string, level: string, language: string = "German", userXP: number = 0): Promise<any> {
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -23,8 +23,11 @@ CRITICAL: Generate exactly 3 exercises.
 CRITICAL: New words MUST use 'drag-drop' type. Simple practice uses 'text-input'.
 
 PEDAGOGICAL RULES:
-2. LEVEL CALIBRATION: The user is an ABSOLUTE BEGINNER. Use extremely basic vocabulary (pronouns, 'to be', simple nouns).
-3. SLOW PROGRESSION: Introduce ONLY 1-2 NEW WORDS per lesson. Use familiar words for the rest of the sentence to build confidence.
+2. LEVEL CALIBRATION: The user has ${userXP} XP. 
+   - If XP < 500: Use extremely basic vocabulary (pronouns, 'to be'). Introduce ONLY 1-2 NEW WORDS.
+   - If XP 500-1500: Introduce 3 NEW WORDS. Use slightly more diverse sentence structures.
+   - If XP > 1500: Introduce 4-5 NEW WORDS. Avoid basic 'Ich bin...' patterns unless relevant.
+3. SLOW PROGRESSION: Use familiar words for the rest of the sentence to build confidence.
 4. REPETITION: Prioritize repeating words the user has likely seen in previous basic introductions.
 5. 'correctTranslation' MUST be English.
 6. 'targetSentence' MUST be the ${language} translation.
@@ -150,7 +153,8 @@ export async function generatePersonalizedLesson(
     mistakes: string[],
     userLevel: string = "Intermediate",
     topic: string = "General",
-    language: string = "German"
+    language: string = "German",
+    userXP: number = 0
 ): Promise<any | null> {
     try {
         console.log(`Generating multi-exercise ${language} lesson for level ${userLevel}`);
@@ -170,8 +174,11 @@ export async function generatePersonalizedLesson(
                         CRITICAL rules:
                         1. Respond with ONLY valid JSON.
                         2. Generate exactly 3 exercises in an array.
-                        4. TARGET LEVEL: Level 1 (Absolute Beginner).
-                        5. SLOW GROWTH: INTRODUCE ONLY 1-2 NEW WORDS. Focus on fixing mistakes using 80% familiar words to maintain confidence.
+                        4. LEVEL CALIBRATION: The user has ${userXP} XP.
+                        5. ADAPTIVE GROWTH: 
+                           - If XP < 500: INTRODUCE ONLY 1-2 NEW WORDS. (Basic level).
+                           - If XP 500-1500: INTRODUCE 3 NEW WORDS.
+                           - If XP > 1500: INTRODUCE 4-5 NEW WORDS. Move past basic introductions.
                         6. REPETITION: Heavily prioritize repeating basic pronouns and high-frequency nouns.
                         7. 'targetSentence' MUST be in ${language}.
                         8. 'correctTranslation' MUST be in English.

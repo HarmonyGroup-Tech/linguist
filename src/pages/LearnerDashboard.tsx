@@ -338,7 +338,8 @@ export default function LearnerDashboard() {
                                                 [], // No new mistakes, just progression
                                                 "Absolute Beginner",
                                                 "Introduction",
-                                                userSkills.targetLanguage || "German"
+                                                userSkills.targetLanguage || "German",
+                                                userSkills.totalXP || 0
                                             );
                                         }
 
