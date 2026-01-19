@@ -308,7 +308,7 @@ export const UserSkillsService = {
                     streak: 0,
                     lastPracticeDate: "",
                     completedLessons: [],
-                    lings: 5, // Start with full lings
+                    lings: 25, // Start with full lings
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German", // Default for now, ideally selected at signup
                     lessonsSinceLastClient: 0
@@ -331,7 +331,7 @@ export const UserSkillsService = {
                 streak: 0,
                 lastPracticeDate: "",
                 completedLessons: [],
-                lings: 5,
+                lings: 25,
                 lastLingRefill: new Date().toISOString(),
                 targetLanguage: "German",
                 lessonsSinceLastClient: 0
@@ -422,7 +422,7 @@ export const UserSkillsService = {
                     streak: 0,
                     lastPracticeDate: "",
                     completedLessons: [],
-                    lings: 5,
+                    lings: 25,
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German",
                     lessonsSinceLastClient: 0
@@ -435,7 +435,7 @@ export const UserSkillsService = {
                 const data = docSnap.data() as UserSkills;
                 if (typeof data.lings === 'undefined') {
                     await updateDoc(userSkillsRef, {
-                        lings: 5,
+                        lings: 25,
                         lastLingRefill: new Date().toISOString(),
                         targetLanguage: data.targetLanguage || "German",
                         lessonsSinceLastClient: data.lessonsSinceLastClient || 0
@@ -462,7 +462,7 @@ export const UserSkillsService = {
     async ensureLings(skills: UserSkills): Promise<UserSkills> {
         // If already full, just update timestamp to now (or keep old? Keep old to accumulate time? 
         // Logic: 1 ling every 4 hours.
-        if (skills.lings >= 5) return skills;
+        if (skills.lings >= 25) return skills;
 
         const lastRefill = new Date(skills.lastLingRefill || new Date().toISOString());
         const now = new Date();
@@ -471,7 +471,7 @@ export const UserSkillsService = {
 
         if (diffHours >= 4) {
             const lingsToAdd = Math.floor(diffHours / 4);
-            const newLings = Math.min(5, (skills.lings || 0) + lingsToAdd);
+            const newLings = Math.min(25, (skills.lings || 0) + lingsToAdd);
 
             // Only update if we actually added lings
             if (newLings > skills.lings) {
@@ -483,7 +483,7 @@ export const UserSkillsService = {
 
                 // If we hit max, validation might be tricky with "partial" time. 
                 // Simpler approach: If maxed out, set time to now.
-                const finalRefillTime = newLings === 5 ? now.toISOString() : newRefillTime;
+                const finalRefillTime = newLings === 25 ? now.toISOString() : newRefillTime;
 
                 const userSkillsRef = doc(db, 'userSkills', skills.userId);
                 await updateDoc(userSkillsRef, {

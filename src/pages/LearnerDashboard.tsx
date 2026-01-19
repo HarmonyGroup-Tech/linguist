@@ -32,7 +32,7 @@ export default function LearnerDashboard() {
 
     // Timer for ling refill
     useEffect(() => {
-        if (!userSkills || userSkills.lings >= 5) return;
+        if (!userSkills || userSkills.lings >= 25) return;
 
         const updateTimer = () => {
             const lastRefill = new Date(userSkills.lastLingRefill || new Date().toISOString());
@@ -176,60 +176,60 @@ export default function LearnerDashboard() {
     return (
         <div className="min-h-screen bg-brand-gray text-brand-dark font-sans">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-brand-yellow rounded-xl flex items-center justify-center">
-                            <Feather className="w-6 h-6 text-brand-dark" strokeWidth={2.5} />
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+                    <div className="flex items-center space-x-2 md:space-x-3">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-brand-yellow rounded-lg md:rounded-xl flex items-center justify-center">
+                            <Feather className="w-5 h-5 md:w-6 md:h-6 text-brand-dark" strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-xl font-bold text-brand-dark tracking-tight">
-                            Linguist <span className="text-gray-400 font-medium ml-2">Learn</span>
+                        <h1 className="text-lg md:text-xl font-bold text-brand-dark dark:text-white tracking-tight">
+                            Linguist <span className="hidden sm:inline text-gray-400 font-medium ml-2">Learn</span>
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-8">
-                        <div className="flex items-center gap-2 text-orange-500 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
+                    <div className="flex items-center gap-2 md:gap-8">
+                        <div className="hidden sm:flex items-center gap-2 text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30">
                             <Flame className="w-5 h-5 fill-current" />
                             <span className="font-bold">{userSkills.streak}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-4 py-2 rounded-2xl border border-yellow-100 shadow-sm">
-                            <Award className="w-5 h-5" />
-                            <span className="font-bold text-lg">{userSkills.totalXP}</span>
+                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-yellow-100 dark:border-yellow-900/30 shadow-sm">
+                            <Award className="w-4 h-4 md:w-5 md:h-5 text-yellow-600" />
+                            <span className="font-bold text-sm md:text-lg">{userSkills.totalXP}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 relative group cursor-help">
-                            <Diamond className="w-5 h-5 fill-current" />
-                            <span className="font-bold">{userSkills.lings ?? 5}</span>
-                            {userSkills.lings < 5 && (
-                                <span className="text-xs font-normal ml-1 opacity-70">
+                        <div className="flex items-center gap-2 text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 md:px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-900/30 relative group cursor-help">
+                            <Diamond className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                            <span className="font-bold text-sm md:text-base">{userSkills.lings ?? 25}</span>
+                            {userSkills.lings < 25 && (
+                                <span className="hidden md:inline text-xs font-normal ml-1 opacity-70">
                                     {nextLingRefill}
                                 </span>
                             )}
                             {/* Tooltip */}
-                            <div className="absolute top-full mt-2 right-0 bg-gray-800 text-white text-xs p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center pointer-events-none">
+                            <div className="absolute top-full mt-2 right-0 bg-gray-800 text-white text-xs p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center pointer-events-none z-50">
                                 Refills 1 Ling every 4 hours.
                                 <br />
-                                Max 5 Lings.
+                                Max 25 Lings.
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 md:gap-3">
                             <button
                                 onClick={toggleTheme}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
                                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                             >
-                                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                                {theme === 'light' ? <Moon className="w-4 h-4 md:w-5 md:h-5" /> : <Sun className="w-4 h-4 md:w-5 md:h-5" />}
                             </button>
-                            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
-                                <LogOut className="w-5 h-5" />
+                            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
+                                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                             </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="py-12 px-6 max-w-7xl mx-auto">
+            <main className="py-6 md:py-12 px-4 md:px-6 max-w-7xl mx-auto">
                 {/* AI Generation Loading Overlay */}
                 <AnimatePresence>
                     {isGenerating && (
@@ -278,7 +278,7 @@ export default function LearnerDashboard() {
 
                 {/* Current Lesson View */}
                 {currentLesson ? (
-                    <div className="mb-12">
+                    <div className="mb-8 md:mb-12">
                         <LessonView
                             lesson={currentLesson}
                             loading={false}
@@ -291,19 +291,19 @@ export default function LearnerDashboard() {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-xl border border-gray-100 dark:border-gray-700 mb-12 text-center"
+                            className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100 dark:border-gray-700 mb-8 md:mb-12 text-center"
                         >
-                            <div className="w-20 h-20 bg-brand-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-yellow/30">
-                                <Feather className="w-10 h-10 text-brand-dark" strokeWidth={2.5} />
+                            <div className="w-16 h-16 md:w-20 md:h-20 bg-brand-yellow rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg shadow-brand-yellow/30">
+                                <Feather className="w-8 h-8 md:w-10 md:h-10 text-brand-dark" strokeWidth={2.5} />
                             </div>
-                            <h2 className="text-3xl font-bold text-brand-dark dark:text-white mb-3">Ready for your next step?</h2>
-                            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                            <h2 className="text-2xl md:text-3xl font-bold text-brand-dark dark:text-white mb-2 md:mb-3 leading-tight">Ready for your next step?</h2>
+                            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-6 md:mb-8 max-w-md mx-auto">
                                 The AI has analyzed your progress and prepared a fresh lesson in {userSkills.targetLanguage || 'German'} just for you.
                             </p>
 
                             <button
                                 onClick={async () => {
-                                    // 1. Check if there's already an available lesson
+                                    // ... logic ...
                                     const nextAvailable = availableLessons.find(l =>
                                         (!l.category || l.category === 'standard') &&
                                         !userSkills.completedLessons.includes(l.id!)
@@ -314,17 +314,14 @@ export default function LearnerDashboard() {
                                         return;
                                     }
 
-                                    // 2. Otherwise generate a new one
                                     setIsGenerating(true);
                                     try {
                                         const { generatePersonalizedLesson, generateClientRequest } = await import('../services/ai');
                                         const { ProjectService } = await import('../services/db');
 
-                                        // Check for real pending projects first
                                         const pendingProjects = await ProjectService.getPendingProjects();
                                         const hasRealWork = pendingProjects.length > 0;
 
-                                        // Trigger Client Work every 3-7 lessons if level > 5 (approx 500 XP) AND real work exists
                                         const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP >= 500) && hasRealWork;
 
                                         let newLessonData;
@@ -332,10 +329,9 @@ export default function LearnerDashboard() {
                                             newLessonData = await generateClientRequest(userSkills.targetLanguage || "German", userSkills.totalXP);
                                         }
 
-                                        // Fallback or standard generation
                                         if (!newLessonData) {
                                             newLessonData = await generatePersonalizedLesson(
-                                                [], // No new mistakes, just progression
+                                                [],
                                                 "Absolute Beginner",
                                                 "Introduction",
                                                 userSkills.targetLanguage || "German",
@@ -359,9 +355,9 @@ export default function LearnerDashboard() {
                                         setIsGenerating(false);
                                     }
                                 }}
-                                className="inline-flex items-center gap-3 px-10 py-5 bg-brand-dark text-white rounded-2xl font-bold text-xl shadow-xl hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-4 md:py-5 bg-brand-dark text-white rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                             >
-                                <Play className="w-6 h-6 fill-current group-hover:text-brand-yellow transition-colors" />
+                                <Play className="w-5 h-5 md:w-6 md:h-6 fill-current group-hover:text-brand-yellow transition-colors" />
                                 Start Next Lesson
                             </button>
                         </motion.div>

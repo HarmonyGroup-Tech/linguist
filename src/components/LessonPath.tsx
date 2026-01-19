@@ -9,7 +9,7 @@ interface LessonPathProps {
     lings?: number;
 }
 
-export default function LessonPath({ lessons, userSkills, onLessonSelect, lings = 5 }: LessonPathProps) {
+export default function LessonPath({ lessons, userSkills, onLessonSelect, lings = 25 }: LessonPathProps) {
     const getLessonStatus = (lesson: Lesson): 'completed' | 'available' | 'locked' => {
         if (userSkills.completedLessons.includes(lesson.id!)) {
             return 'completed';
@@ -57,7 +57,7 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect, lings 
     return (
         <div className="relative">
             {/* Horizontal Scroll Container */}
-            <div className="flex items-center gap-6 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            <div className="flex items-center gap-4 md:gap-6 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
                 {lessons.map((lesson, index) => {
                     const status = getLessonStatus(lesson);
                     const config = getStatusConfig(status);
@@ -68,7 +68,7 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect, lings 
                         <div key={lesson.id} className="flex-shrink-0 flex items-center snap-center">
                             {/* Connection Line */}
                             {index > 0 && (
-                                <div className={`w-12 h-1 ${status === 'locked' ? 'bg-gray-100' : 'bg-brand-yellow/30'}`} />
+                                <div className={`w-8 md:w-12 h-1 ${status === 'locked' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-brand-yellow/30'}`} />
                             )}
 
                             {/* Lesson Node */}
@@ -112,8 +112,8 @@ export default function LessonPath({ lessons, userSkills, onLessonSelect, lings 
             </div>
 
             {/* Fade Edges for scrolling */}
-            <div className="absolute top-0 left-0 bottom-8 w-12 bg-gradient-to-r from-brand-gray/50 to-transparent pointer-events-none" />
-            <div className="absolute top-0 right-0 bottom-8 w-12 bg-gradient-to-l from-brand-gray/50 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 bottom-8 w-12 bg-gradient-to-r from-brand-gray/50 dark:from-gray-900/50 to-transparent pointer-events-none" />
+            <div className="absolute top-0 right-0 bottom-8 w-12 bg-gradient-to-l from-brand-gray/50 dark:from-gray-900/50 to-transparent pointer-events-none" />
         </div>
     );
 }

@@ -78,106 +78,114 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         }
     };
 
+    const originalTotal = lesson.exercises?.length || 1;
+
     if (!currentExercise) return null;
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
-            <ProgressHeader index={currentExerciseIndex} total={activeExercises.length} category={lesson.category} originalTotal={(lesson.exercises?.length || 1)} />
+            {/* Progress Header */}
+            <div className="max-w-4xl mx-auto px-4 md:px-0 mb-6 md:mb-10">
+                <ProgressHeader
+                    index={currentExerciseIndex}
+                    total={activeExercises.length}
+                    category={lesson.category}
+                    originalTotal={originalTotal}
+                />
+            </div>
 
-            <div className="relative min-h-[600px]">
+            <div className="max-w-4xl mx-auto px-2 md:px-0 pb-32">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={`${lesson.id}-${currentExerciseIndex}`}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="w-full"
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl shadow-xl md:shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
                     >
-                        {currentExercise.type === 'drag-drop' ? (
-                            <DragDropView
-                                lesson={{ ...lesson, ...currentExercise } as any}
-                                onComplete={(ans, corr) => handleStepComplete(ans, corr)}
-                                loading={loading}
-                            />
-                        ) : (() => {
-                            const parts = currentExercise.context.split(currentExercise.targetSentence);
-                            return (
-                                <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-10 shadow-xl border border-gray-100 dark:border-gray-700 relative overflow-hidden">
-                                    {/* Header Info */}
-                                    <div className="flex items-center justify-between text-gray-400 text-sm font-medium mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
-                                        <div className="flex items-center gap-2">
-                                            <Book className="w-4 h-4 text-brand-yellow" />
-                                            <span className="text-brand-dark dark:text-gray-200">
-                                                {lesson.category === 'client-request' ? 'Official Correspondence' : (lesson.sourceTitle || 'Grammar Practice')}
-                                            </span>
-                                        </div>
-                                        {lesson.category === 'client-request' && (
-                                            <div className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold uppercase rounded-lg border border-blue-100">
-                                                High Priority Client
+                        <div className="p-6 md:p-10">
+                            {currentExercise.type === 'drag-drop' ? (
+                                <DragDropView
+                                    lesson={{ ...lesson, ...currentExercise } as any}
+                                    onComplete={(ans, corr) => handleStepComplete(ans, corr)}
+                                    loading={loading}
+                                />
+                            ) : (() => {
+                                const parts = currentExercise.context.split(currentExercise.targetSentence);
+                                return (
+                                    <div className="relative overflow-hidden">
+                                        {/* Header Info */}
+                                        <div className="flex items-center justify-between text-gray-400 text-sm font-medium mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
+                                            <div className="flex items-center gap-2">
+                                                <Book className="w-4 h-4 text-brand-yellow" />
+                                                <span className="text-brand-dark dark:text-gray-200">
+                                                    {lesson.category === 'client-request' ? 'Official Correspondence' : (lesson.sourceTitle || 'Grammar Practice')}
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
-
-                                    {/* Context Display */}
-                                    <div className="text-xl leading-relaxed text-gray-600 dark:text-gray-300 font-serif mb-10">
-                                        <p className="mb-4 text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
-                                            <ArrowRight className="w-4 h-4" />
-                                            Translate to {lesson.language}
-                                        </p>
-                                        <p className="text-3xl font-bold text-brand-dark dark:text-white mb-8">
-                                            {currentExercise.correctTranslation}
-                                        </p>
-                                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700 text-lg italic text-gray-400">
-                                            {currentExercise.context.includes(currentExercise.targetSentence) ? (
-                                                <>
-                                                    {parts[0]}
-                                                    <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50 not-italic">
-                                                        ...
-                                                    </span>
-                                                    {parts[1]}
-                                                </>
-                                            ) : (
-                                                currentExercise.context
+                                            {lesson.category === 'client-request' && (
+                                                <div className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold uppercase rounded-lg border border-blue-100">
+                                                    High Priority Client
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
 
-                                    {/* Interaction Area */}
-                                    <form onSubmit={handleSubmit} className="space-y-6">
-                                        <div>
-                                            <label className="flex items-center gap-2 text-sm font-bold text-brand-dark dark:text-gray-200 mb-3">
-                                                <Sparkles className="w-4 h-4 text-brand-yellow" />
-                                                Your Translation
-                                            </label>
-
-                                            <div className="relative group">
-                                                <textarea
-                                                    className="w-full p-6 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-brand-yellow rounded-2xl text-brand-dark dark:text-white placeholder-gray-400 focus:outline-none transition-all resize-none h-40 text-lg"
-                                                    placeholder="Type your translation here..."
-                                                    value={input}
-                                                    onChange={(e) => setInput(e.target.value)}
-                                                    disabled={submitted || loading}
-                                                />
+                                        <div className="space-y-4 md:space-y-6">
+                                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-brand-yellow/20 text-brand-dark dark:text-brand-yellow rounded-full text-sm font-semibold uppercase tracking-wider border border-brand-yellow/30">
+                                                <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                                Translate
+                                            </div>
+                                            <p className="text-2xl md:text-4xl font-bold text-brand-dark dark:text-white leading-tight">
+                                                {currentExercise.correctTranslation}
+                                            </p>
+                                            <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl md:rounded-2xl border border-gray-100 dark:border-gray-700 text-base md:text-lg italic text-gray-400">
+                                                {currentExercise.context.includes(currentExercise.targetSentence) ? (
+                                                    <>
+                                                        {parts[0]}
+                                                        <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50 not-italic">
+                                                            ...
+                                                        </span>
+                                                        {parts[1]}
+                                                    </>
+                                                ) : (
+                                                    currentExercise.context
+                                                )}
                                             </div>
                                         </div>
 
-                                        {!submitted && (
-                                            <div className="flex justify-end">
-                                                <button
-                                                    type="submit"
-                                                    disabled={!input.trim() || loading}
-                                                    className="px-10 py-4 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-3 text-lg bg-brand-yellow text-brand-dark"
-                                                >
-                                                    Check Answer
-                                                    <Send className="w-5 h-5" />
-                                                </button>
+                                        {/* Interaction Area */}
+                                        <form onSubmit={handleSubmit} className="space-y-6">
+                                            <div>
+                                                <div className="space-y-4 md:space-y-6">
+                                                    <div className="relative group">
+                                                        <input
+                                                            type="text"
+                                                            value={input}
+                                                            onChange={(e) => setInput(e.target.value)}
+                                                            placeholder="Focus through the target language..."
+                                                            className="w-full text-xl md:text-2xl p-4 md:p-6 bg-gray-50 dark:bg-gray-900/50 border-2 border-transparent focus:border-brand-yellow dark:focus:border-brand-yellow text-brand-dark dark:text-white rounded-xl md:rounded-2xl outline-none transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700 shadow-inner"
+                                                            onKeyPress={(e) => e.key === 'Enter' && !loading && handleSubmit(e)}
+                                                            readOnly={submitted || loading}
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                    {!submitted && (
+                                                        <button
+                                                            type="submit"
+                                                            disabled={!input.trim() || loading}
+                                                            className="w-full py-4 md:py-6 bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-lg hover:bg-gray-800 dark:hover:bg-yellow-400 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-2 md:gap-3 group"
+                                                        >
+                                                            Check Answer
+                                                            <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </form>
-                                </div>
-                            );
-                        })()}
+                                        </form>
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     </motion.div>
                 </AnimatePresence>
 

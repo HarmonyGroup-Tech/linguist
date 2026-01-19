@@ -79,35 +79,32 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
     return (
         <div className="max-w-3xl mx-auto">
             {/* Context Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
-                <div className="mb-6 flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700 mb-6 md:mb-8">
+                <div className="mb-4 md:mb-6 flex items-center justify-between">
                     <div>
                         {lesson.sourceTitle && (
-                            <h3 className="font-bold text-brand-dark flex items-center gap-2">
-                                <span className="w-1 h-6 bg-brand-yellow rounded-full"></span>
+                            <h3 className="font-bold text-brand-dark dark:text-white flex items-center gap-2 text-sm md:text-base">
+                                <span className="w-1 h-5 md:h-6 bg-brand-yellow rounded-full"></span>
                                 {lesson.sourceTitle}
                             </h3>
                         )}
-                        {lesson.sourceAuthor && (
-                            <p className="text-sm text-gray-500 ml-3">by {lesson.sourceAuthor}</p>
-                        )}
                     </div>
-                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider">
-                        {lesson.level} / 10
+                    <span className="px-2 md:px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider">
+                        Level {lesson.level}
                     </span>
                 </div>
 
-                <div className="text-xl leading-loose font-serif text-gray-700">
-                    <p className="mb-4 text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
-                        <ArrowRight className="w-4 h-4" />
+                <div className="text-lg md:text-xl leading-relaxed md:leading-loose font-serif text-gray-700 dark:text-gray-300">
+                    <p className="mb-3 md:mb-4 text-xs md:text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
+                        <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         Translate to {lesson.language}
                     </p>
-                    <p className="text-2xl font-bold text-brand-dark mb-6">
+                    <p className="text-xl md:text-2xl font-bold text-brand-dark dark:text-white mb-4 md:mb-6">
                         {lesson.correctTranslation}
                     </p>
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-lg italic text-gray-500">
+                    <div className="p-4 md:p-5 bg-gray-50 dark:bg-gray-900/50 rounded-xl md:rounded-2xl border border-gray-100 dark:border-gray-700 text-base md:text-lg italic text-gray-500 underline-offset-4">
                         {prefix}
-                        <span className="bg-brand-yellow/30 px-1 py-0.5 rounded mx-1 font-medium border-b-2 border-brand-yellow/50 text-brand-dark not-italic">
+                        <span className="bg-brand-yellow/30 dark:bg-brand-yellow/20 px-1 py-0.5 rounded mx-1 font-medium border-b-2 border-brand-yellow/50 text-brand-dark dark:text-white not-italic">
                             ...
                         </span>
                         {suffix}
@@ -116,10 +113,10 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
             </div>
 
             {/* Answer Area */}
-            <div className="mb-8 min-h-[80px]">
-                <p className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Form the sentence</p>
+            <div className="mb-6 md:mb-8">
+                <p className="text-[10px] md:text-xs font-bold text-gray-400 mb-3 md:mb-4 uppercase tracking-wider">Form the sentence</p>
 
-                <div className="flex flex-wrap gap-2 min-h-[60px] p-2 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 transition-colors">
+                <div className="flex flex-wrap gap-2 md:gap-3 min-h-[70px] md:min-h-[80px] p-3 md:p-4 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 transition-colors">
                     <AnimatePresence>
                         {selectedWords.map((word) => (
                             <motion.button
@@ -129,7 +126,7 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.8, opacity: 0 }}
-                                className="px-4 py-3 bg-white border-2 border-gray-200 shadow-[0_2px_0_0_rgba(229,231,235,1)] rounded-xl font-bold text-brand-dark hover:bg-gray-50 active:translate-y-[2px] active:shadow-none transition-all"
+                                className="px-3 md:px-5 py-2.5 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-[0_2px_0_0_rgba(229,231,235,1)] dark:shadow-[0_2px_0_0_rgba(31,41,55,1)] rounded-xl md:rounded-2xl font-bold text-brand-dark dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 active:translate-y-[2px] active:shadow-none transition-all text-base md:text-lg"
                             >
                                 {word.word}
                             </motion.button>
@@ -137,7 +134,7 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                     </AnimatePresence>
 
                     {selectedWords.length === 0 && (
-                        <div className="w-full flex items-center justify-center text-gray-400 italic text-sm">
+                        <div className="w-full flex items-center justify-center text-gray-400 italic text-xs md:text-sm">
                             Tap words below to build your answer
                         </div>
                     )}
@@ -145,70 +142,43 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
             </div>
 
             {/* Word Bank */}
-            <div className="flex flex-wrap gap-3 justify-center mb-12">
+            <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-8 md:mb-12">
                 <AnimatePresence>
                     {availableWords.map((word) => (
                         <motion.button
                             key={word.id}
                             layoutId={`word-${word.id}`}
                             onClick={() => handleWordSelect(word)}
-                            className="px-4 py-3 bg-white border-2 border-gray-200 shadow-[0_2px_0_0_rgba(229,231,235,1)] rounded-xl font-bold text-brand-dark hover:bg-gray-50 active:translate-y-[2px] active:shadow-none transition-all"
+                            className="px-3 md:px-5 py-2.5 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-[0_2px_0_0_rgba(229,231,235,1)] dark:shadow-[0_2px_0_0_rgba(31,41,55,1)] rounded-xl md:rounded-2xl font-bold text-brand-dark dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 active:translate-y-[2px] active:shadow-none transition-all text-base md:text-lg"
                         >
                             {word.word}
                         </motion.button>
                     ))}
-                    {availableWords.length === 0 && selectedWords.length > 0 && (
-                        <div className="h-[52px]"></div> // Placeholder to prevent layout shift
-                    )}
                 </AnimatePresence>
             </div>
 
             {/* Actions */}
             <motion.div
                 animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between gap-4"
             >
-                {/* Status Message */}
                 <div className="flex-1">
-                    {checkStatus === 'incorrect' && (
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-xl inline-flex animate-pulse">
-                                <X className="w-5 h-5" />
-                                <span>Not quite right...</span>
-                            </div>
-                            <div className="block">
-                                <p className="text-xs text-gray-400 uppercase font-black mb-1">Correct Answer:</p>
-                                <p className="text-brand-dark font-bold text-lg">{lesson.targetSentence}</p>
-                            </div>
-                        </div>
-                    )}
-                    {checkStatus === 'correct' && (
-                        <div className="flex items-center gap-2 text-green-500 font-bold bg-green-50 px-4 py-2 rounded-xl inline-flex">
-                            <Check className="w-5 h-5" />
-                            <span>Perfect!</span>
-                        </div>
-                    )}
+                    {/* Status message removed: Parent LessonView handles unified feedback overlay */}
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 md:gap-4 shrink-0">
                     {selectedWords.length > 0 && checkStatus !== 'correct' && (
                         <button
                             onClick={() => {
-                                setAvailableWords(prev => [...prev, ...selectedWords].sort((a, b) => a.id - b.id)); // Simple reset, or preserve shuffle? 
-                                // Actually, better to just put them back. For simplicity, just reset like useEffect
-                                // But keeping IDs is safer.
-                                setSelectedWords([]);
-                                // Need to restore to available.
-                                // The handleWordDeselect logic does one by one.
-                                // Let's simplify: reset all
-                                const all = [...availableWords, ...selectedWords].sort((a, b) => Math.random() - 0.5);
+                                const all = [...availableWords, ...selectedWords].sort(() => Math.random() - 0.5);
                                 setAvailableWords(all);
+                                setSelectedWords([]);
                                 setCheckStatus('idle');
                             }}
-                            className="p-4 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-brand-dark transition-colors"
+                            className="p-3 md:p-4 rounded-xl text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-brand-dark dark:hover:text-white transition-colors"
                             title="Reset"
                         >
-                            <RotateCcw className="w-6 h-6" />
+                            <RotateCcw className="w-5 h-5 md:w-6 md:h-6" />
                         </button>
                     )}
 
@@ -216,12 +186,12 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                         onClick={handleCheck}
                         disabled={selectedWords.length === 0 || loading || checkStatus === 'correct'}
                         className={`
-                            px-8 py-4 rounded-2xl font-bold flex items-center gap-3 transition-all
+                            px-6 md:px-10 py-4 md:py-5 rounded-xl md:rounded-2xl font-bold flex items-center gap-2 md:gap-3 transition-all text-base md:text-xl
                             ${checkStatus === 'correct'
                                 ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
                                 : selectedWords.length === 0
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-brand-yellow text-brand-dark shadow-[0_4px_0_0_#e5bb20] hover:translate-y-[2px] hover:shadow-[0_2px_0_0_#e5bb20]'
+                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border dark:border-gray-700'
+                                    : 'bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark shadow-xl hover:scale-[1.02] active:scale-[0.98]'
                             }
                         `}
                     >
@@ -229,13 +199,13 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                             <span>Checking...</span>
                         ) : checkStatus === 'correct' ? (
                             <>
-                                <Check className="w-6 h-6" />
+                                <Check className="w-5 h-5 md:w-6 md:h-6" />
                                 <span>Correct!</span>
                             </>
                         ) : (
                             <>
                                 <span>Check Answer</span>
-                                <ArrowRight className="w-5 h-5" />
+                                <ArrowRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1" />
                             </>
                         )}
                     </button>
