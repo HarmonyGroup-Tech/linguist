@@ -70,6 +70,7 @@ export interface UserSkills {
     completedLessons: string[];
     lings: number;          // Current balance (0-5)
     lastLingRefill: string; // ISO Date string
+    targetLanguage: string; // The language the user is learning (e.g., German, Spanish)
 }
 
 // --- Lesson Service ---
@@ -288,7 +289,8 @@ export const UserSkillsService = {
                     lastPracticeDate: "",
                     completedLessons: [],
                     lings: 5, // Start with full lings
-                    lastLingRefill: new Date().toISOString()
+                    lastLingRefill: new Date().toISOString(),
+                    targetLanguage: "German" // Default for now, ideally selected at signup
                 };
 
                 // Create the document
@@ -309,7 +311,8 @@ export const UserSkillsService = {
                 lastPracticeDate: "",
                 completedLessons: [],
                 lings: 5,
-                lastLingRefill: new Date().toISOString()
+                lastLingRefill: new Date().toISOString(),
+                targetLanguage: "German"
             };
         }
     },
@@ -363,7 +366,8 @@ export const UserSkillsService = {
                 lastPracticeDate: today,
                 completedLessons,
                 lings: currentSkills.lings,
-                lastLingRefill: currentSkills.lastLingRefill
+                lastLingRefill: currentSkills.lastLingRefill,
+                targetLanguage: currentSkills.targetLanguage || "German"
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);
@@ -396,7 +400,8 @@ export const UserSkillsService = {
                     lastPracticeDate: "",
                     completedLessons: [],
                     lings: 5,
-                    lastLingRefill: new Date().toISOString()
+                    lastLingRefill: new Date().toISOString(),
+                    targetLanguage: "German"
                 };
 
                 // Use setDoc for new document
@@ -407,7 +412,12 @@ export const UserSkillsService = {
                 if (typeof data.lings === 'undefined') {
                     await updateDoc(userSkillsRef, {
                         lings: 5,
-                        lastLingRefill: new Date().toISOString()
+                        lastLingRefill: new Date().toISOString(),
+                        targetLanguage: data.targetLanguage || "German"
+                    } as any);
+                } else if (typeof data.targetLanguage === 'undefined') {
+                    await updateDoc(userSkillsRef, {
+                        targetLanguage: "German"
                     } as any);
                 }
             }

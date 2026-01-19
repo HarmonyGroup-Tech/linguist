@@ -63,9 +63,12 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                         <Book className="w-4 h-4 text-brand-yellow" />
                         <span className="text-brand-dark">{lesson.sourceTitle} <span className="text-gray-400 font-normal">by</span> {lesson.sourceAuthor}</span>
                     </div>
-                    <div className="px-3 py-1 bg-brand-gray rounded-full text-brand-dark text-xs font-bold uppercase tracking-wide">
-                        Level B2
-                    </div>
+                    {lesson.isAiGenerated && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-brand-dark text-xs font-bold uppercase tracking-wider rounded-lg border border-yellow-100">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Personalized
+                        </div>
+                    )}
                 </div>
 
                 {/* Context Display */}

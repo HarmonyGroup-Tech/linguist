@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import LessonView from '../components/LessonView';
-import SkillProgress from '../components/SkillProgress';
+// import SkillProgress from '../components/SkillProgress'; -- Removed for UX simplification
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
 import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles } from 'lucide-react';
@@ -164,8 +164,9 @@ export default function LearnerDashboard() {
                     try {
                         const newLessonData = await generatePersonalizedLesson(
                             [`Expected: "${currentLesson.correctTranslation}" but got: "${userTranslation}"`],
-                            `Level ${userSkills.vocabulary > 20 ? 'Intermediate' : 'Beginner'}`,
-                            currentLesson.title
+                            `Level ${userSkills.vocabulary > 20 ? 'Intermediate' : 'Beginner'} (XP: ${userSkills.totalXP})`,
+                            currentLesson.title,
+                            userSkills.targetLanguage || "German"
                         );
 
                         if (newLessonData) {
@@ -270,9 +271,9 @@ export default function LearnerDashboard() {
                             <Flame className="w-5 h-5 fill-current" />
                             <span className="font-bold">{userSkills.streak}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
+                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-4 py-2 rounded-2xl border border-yellow-100 shadow-sm">
                             <Award className="w-5 h-5" />
-                            <span className="font-bold">{userSkills.totalXP} XP</span>
+                            <span className="font-bold text-lg">{userSkills.totalXP}</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-blue-500 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 relative group cursor-help">
@@ -425,12 +426,6 @@ export default function LearnerDashboard() {
                 {/* Current Lesson View */}
                 {currentLesson ? (
                     <div className="mb-12">
-                        <button
-                            onClick={() => setCurrentLesson(null)}
-                            className="mb-6 text-sm font-semibold text-gray-600 hover:text-brand-dark transition-colors"
-                        >
-                            ← Back to Lessons
-                        </button>
                         <LessonView
                             lesson={currentLesson}
                             loading={false}
@@ -438,125 +433,65 @@ export default function LearnerDashboard() {
                         />
                     </div>
                 ) : (
-                    <>
-                        {/* Skills Progress */}
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-brand-dark mb-4">Your Skills</h2>
-                            <SkillProgress
-                                vocabulary={userSkills.vocabulary}
-                                grammar={userSkills.grammar}
-                                reading={userSkills.reading}
-                                writing={userSkills.writing}
+                    <div className="max-w-4xl mx-auto">
+                        {/* Hero Section / Next Lesson Button */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-3xl p-10 shadow-xl border border-gray-100 dark:border-gray-700 mb-12 text-center"
+                        >
+                            <div className="w-20 h-20 bg-brand-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-yellow/30">
+                                <Feather className="w-10 h-10 text-brand-dark" strokeWidth={2.5} />
+                            </div>
+                            <h2 className="text-3xl font-bold text-brand-dark dark:text-white mb-3">Ready for your next step?</h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                                The AI has analyzed your progress and prepared a fresh lesson in {userSkills.targetLanguage || 'German'} just for you.
+                            </p>
+
+                            <button
+                                onClick={async () => {
+                                    setIsGenerating(true);
+                                    try {
+                                        const { generatePersonalizedLesson } = await import('../services/ai');
+                                        const newLessonData = await generatePersonalizedLesson(
+                                            [], // No new mistakes, just progression
+                                            `Progress: ${userSkills.totalXP} XP`,
+                                            "General Progression",
+                                            userSkills.targetLanguage || "German"
+                                        );
+
+                                        if (newLessonData) {
+                                            const newLessonId = await LessonService.createLesson({
+                                                ...newLessonData,
+                                                createdBy: 'AI_TUTOR',
+                                                createdAt: new Date(),
+                                                isActive: true
+                                            } as any);
+
+                                            handleLessonSelect({ ...newLessonData, id: newLessonId });
+                                        }
+                                    } catch (e) {
+                                        console.error(e);
+                                    } finally {
+                                        setIsGenerating(false);
+                                    }
+                                }}
+                                className="inline-flex items-center gap-3 px-10 py-5 bg-brand-dark text-white rounded-2xl font-bold text-xl shadow-xl hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                            >
+                                <Play className="w-6 h-6 fill-current group-hover:text-brand-yellow transition-colors" />
+                                Start Next Lesson
+                            </button>
+                        </motion.div>
+
+                        {/* Journey */}
+                        <div className="space-y-4">
+                            <LessonPath
+                                lessons={availableLessons.filter(l => !l.category || l.category === 'standard')}
+                                userSkills={userSkills}
+                                onLessonSelect={handleLessonSelect}
                             />
                         </div>
-
-                        {/* Tabs */}
-                        <div className="flex gap-4 mb-8">
-                            <button
-                                onClick={() => setActiveTab('path')}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'path'
-                                    ? 'bg-brand-dark text-white shadow-lg'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Map className="w-5 h-5" />
-                                Learning Path
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('workouts')}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'workouts'
-                                    ? 'bg-violet-600 text-white shadow-lg'
-                                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Quote className="w-5 h-5" />
-                                Workouts
-                            </button>
-                        </div>
-
-                        {activeTab === 'path' ? (
-                            <div className="space-y-8">
-                                {/* Infinite Learning / Empty State */}
-                                {availableLessons.filter(l => !l.category || l.category === 'standard').every(l => userSkills.completedLessons.includes(l.id!)) && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-gradient-to-r from-brand-dark to-gray-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-                                        <div className="relative z-10">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                                                    <Sparkles className="w-6 h-6 text-yellow-400" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-bold">Path Completed!</h3>
-                                                    <p className="text-gray-300">You've finished all standard lessons.</p>
-                                                </div>
-                                            </div>
-
-                                            <p className="mb-6 text-gray-200 max-w-lg">
-                                                Don't stop now! The AI can generate infinite new lessons tailored to your level to keep your streak alive.
-                                            </p>
-
-                                            <button
-                                                onClick={() => {
-                                                    setIsGenerating(true);
-                                                    import('../services/ai').then(async ({ generatePersonalizedLesson }) => {
-                                                        try {
-                                                            const newLessonData = await generatePersonalizedLesson(
-                                                                ["User requested advanced practice"],
-                                                                "Advanced", // Auto-scale ideally
-                                                                "General Practice"
-                                                            );
-
-                                                            if (newLessonData) {
-                                                                const newLessonId = await LessonService.createLesson({
-                                                                    ...newLessonData,
-                                                                    createdBy: 'AI_TUTOR',
-                                                                    createdAt: new Date(),
-                                                                    active: true
-                                                                } as any);
-
-                                                                const fullLesson = { ...newLessonData, id: newLessonId };
-                                                                setRecommendation({
-                                                                    lesson: fullLesson,
-                                                                    reason: "Here is a fresh lesson to keep you moving forward!"
-                                                                });
-                                                            }
-                                                        } catch (e) {
-                                                            console.error(e);
-                                                        } finally {
-                                                            setIsGenerating(false);
-                                                        }
-                                                    });
-                                                }}
-                                                className="px-6 py-3 bg-white text-brand-dark font-bold rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-2"
-                                            >
-                                                <Play className="w-5 h-5 fill-current" />
-                                                Generate New Lesson
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                <LessonPath
-                                    lessons={availableLessons.filter(l => !l.category || l.category === 'standard')}
-                                    userSkills={userSkills}
-                                    onLessonSelect={handleLessonSelect}
-                                />
-                            </div>
-                        ) : (
-                            <div>
-                                <QuotationsView
-                                    lessons={availableLessons.filter(l => l.category === 'quotation')}
-                                    onSelect={handleLessonSelect}
-                                    completedLessonIds={userSkills.completedLessons}
-                                />
-                            </div>
-                        )}
-                    </>
+                    </div>
                 )}
             </main>
         </div>

@@ -7,7 +7,7 @@ export interface LessonResponse {
     targetSentence: string;
 }
 
-export async function generateLesson(topic: string, level: string, language: string = "Spanish"): Promise<LessonResponse> {
+export async function generateLesson(topic: string, level: string, language: string = "German"): Promise<LessonResponse> {
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -15,7 +15,7 @@ export async function generateLesson(topic: string, level: string, language: str
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "mistralai/Mistral-7B-Instruct-v0.2",
+                "model": "gemini-2.0-flash", // Body ignored by function but kept for documentation
                 "messages": [
                     {
                         "role": "system",
@@ -45,7 +45,6 @@ The JSON must follow this exact structure:
             throw new Error(`API Error: ${response.status} - ${errorData.message || errorData.error || 'Unknown error'}`);
         }
 
-        // Netlify function returns the OpenRouter response object
         const data = await response.json();
 
         if (!data || !data.choices || !data.choices.length) {
@@ -54,54 +53,19 @@ The JSON must follow this exact structure:
         }
 
         let content = data.choices[0].message.content;
-
-        // Strip markdown code blocks if present (some models add ```json ... ```)
         content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
 
         return JSON.parse(content) as LessonResponse;
     } catch (error) {
         console.error("AI Generation failed:", error);
 
-        // Check if it's a rate limit error
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isRateLimit = errorMessage.includes('429') || errorMessage.includes('rate-limited');
-
-        // Diverse fallback lessons for demo
-        const mockLessons: LessonResponse[] = [
-            {
-                sourceTitle: isRateLimit ? "Demo Mode (API Rate Limited)" : "The Alchemist",
-                sourceAuthor: "Paulo Coelho",
-                context: "The boy's name was Santiago. Dusk was falling as the boy arrived with his herd at an abandoned church. The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood.",
-                targetSentence: "The roof had fallen in long ago, and an enormous sycamore had grown on the spot where the sacristy had once stood."
-            },
-            {
-                sourceTitle: "One Hundred Years of Solitude",
-                sourceAuthor: "Gabriel García Márquez",
-                context: "Many years later, as he faced the firing squad, Colonel Aureliano Buendía was to remember that distant afternoon when his father took him to discover ice. At that time Macondo was a village of twenty adobe houses, built on the bank of a river of clear water that ran along a bed of polished stones.",
-                targetSentence: "At that time Macondo was a village of twenty adobe houses, built on the bank of a river of clear water that ran along a bed of polished stones."
-            },
-            {
-                sourceTitle: "The Little Prince",
-                sourceAuthor: "Antoine de Saint-Exupéry",
-                context: "Once when I was six years old I saw a magnificent picture in a book about the primeval forest. It was a picture of a boa constrictor swallowing an animal. In the book it said: 'Boa constrictors swallow their prey whole, without chewing it.'",
-                targetSentence: "In the book it said: 'Boa constrictors swallow their prey whole, without chewing it.'"
-            },
-            {
-                sourceTitle: "The Shadow of the Wind",
-                sourceAuthor: "Carlos Ruiz Zafón",
-                context: "I still remember the day my father took me to the Cemetery of Forgotten Books for the first time. It was the early summer of 1945, and we walked through the streets of a Barcelona trapped beneath ashen skies as dawn poured over Rambla de Santa Mónica.",
-                targetSentence: "It was the early summer of 1945, and we walked through the streets of a Barcelona trapped beneath ashen skies as dawn poured over Rambla de Santa Mónica."
-            },
-            {
-                sourceTitle: "Like Water for Chocolate",
-                sourceAuthor: "Laura Esquivel",
-                context: "Tita was so sensitive to onions, any time they were being chopped, they say she would just cry and cry. When she was still in my great-grandmother's belly her sobs were so loud that even Nacha, the cook, who was half-deaf, could hear them easily.",
-                targetSentence: "When she was still in my great-grandmother's belly her sobs were so loud that even Nacha, the cook, who was half-deaf, could hear them easily."
-            }
-        ];
-
-        // Return a random mock lesson
-        return mockLessons[Math.floor(Math.random() * mockLessons.length)];
+        // Mock lessons updated to be slightly more generic or just fail
+        return {
+            sourceTitle: "The Metamorphosis",
+            sourceAuthor: "Franz Kafka",
+            context: "Als Gregor Samsa eines Morgens aus unruhigen Träumen erwachte, fand er sich in seinem Bett zu einem ungeheueren Ungeziefer verwandelt. Er lag auf seinem panzerartig harten Rücken und sah, wenn er den Kopf ein wenig hob, seinen gewölbten, braunen, von bogenförmigen Versteifungen geteilten Bauch.",
+            targetSentence: "Als Gregor Samsa eines Morgens aus unruhigen Träumen erwachte, fand er sich in seinem Bett zu einem ungeheueren Ungeziefer verwandelt."
+        };
     }
 }
 
@@ -113,7 +77,6 @@ export async function recommendNextLesson(
     availableLessons: { id: string; title: string; description: string; type: string }[]
 ): Promise<{ recommendedLessonId: string; reason: string } | null> {
     try {
-        // Filter available lessons to a manageable size (e.g., top 10) to avoid token limits
         const candidateLessons = availableLessons.slice(0, 10).map(l => ({
             id: l.id,
             title: l.title,
@@ -129,13 +92,12 @@ export async function recommendNextLesson(
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "mistralai/Mistral-7B-Instruct-v0.2",
                 "messages": [
                     {
                         "role": "system",
                         "content": `You are a helpful language tutor. A user just completed a lesson. Analyze their performance and recommend the best next lesson from the provided list.
                         
-CRITICAL: You MUST respond with ONLY valid JSON - no markdown, no code blocks.
+CRITICAL: You MUST respond with ONLY valid JSON.
 
 Structure:
 {
@@ -152,8 +114,7 @@ User Answer: "${userAnswer}"
 
 Analyze if they made mistakes (typos, grammar, wrong words).
 If they made mistakes, find a lesson that helps practice that.
-If they were perfect, suggest a lesson that introduces new related concepts or is slightly harder.
-Do NOT recommend lessons that are not in the list.
+Else, suggest a progression.
 
 Available Lessons:
 ${JSON.stringify(candidateLessons)}
@@ -164,10 +125,7 @@ Respond with JSON.`
             })
         });
 
-        if (!response.ok) {
-            console.error("AI Recommendation API failed");
-            return null;
-        }
+        if (!response.ok) return null;
 
         const data = await response.json();
         if (!data || !data.choices || !data.choices.length) return null;
@@ -188,10 +146,11 @@ Respond with JSON.`
 export async function generatePersonalizedLesson(
     mistakes: string[],
     userLevel: string = "Intermediate",
-    topic: string = "General"
+    topic: string = "General",
+    language: string = "German"
 ): Promise<any | null> {
     try {
-        console.log("Generating personalized lesson for mistakes:", mistakes);
+        console.log(`Generating personalized ${language} lesson for level ${userLevel}`);
 
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -199,32 +158,33 @@ export async function generatePersonalizedLesson(
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "mistralai/Mistral-7B-Instruct-v0.2",
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are an expert language curriculum designer. 
-                        Create a structured lesson to help a student fix specific mistakes.
+                        "content": `You are an expert ${language} curriculum designer. 
+                        Create a structured lesson to help a student fix specific mistakes they made while learning ${language}.
                         
-                        CRITICAL: Respond with ONLY valid JSON.
+                        CRITICAL rules:
+                        1. Respond with ONLY valid JSON.
+                        2. All instructional content in the 'context' and 'targetSentence' MUST be in ${language}.
+                        3. The 'level' should be a number from 1 to 10 (1=Beginner, 10=Master).
                         
                         JSON Structure:
                         {
-                          "title": "Short title focusing on the concept",
-                          "description": "Brief description of what this lesson practices",
-                          "language": "Spanish",
-                          "level": 5,
+                          "title": "Short title in English",
+                          "description": "Short description in English",
+                          "language": "${language}",
+                          "level": 3,
                           "type": "text-input",
                           "category": "standard",
-                          "context": "A short paragraph (2-3 sentences) in Spanish that uses the concept correctly.",
-                          "targetSentence": "One sentence from the context that the user must translate.",
+                          "context": "A short paragraph (2-3 sentences) in ${language} using the concepts the student missed.",
+                          "targetSentence": "One specific sentence from the context in ${language}.",
                           "correctTranslation": "The English translation of the target sentence.",
                           "vocabularyGain": 5,
                           "grammarGain": 15,
                           "readingGain": 5,
                           "writingGain": 10,
-                          "xpReward": 20,
-                          "generatedFromMistakes": ["mistake 1", "mistake 2"]
+                          "xpReward": 20
                         }`
                     },
                     {
@@ -232,11 +192,12 @@ export async function generatePersonalizedLesson(
                         "content": `Student's Recent Mistakes: 
                         ${mistakes.map(m => `- ${m}`).join('\n')}
                         
-                        Current Level: ${userLevel}
+                        Desired Complexity: ${userLevel}
+                        Focus Language: ${language}
                         Topic Context: ${topic}
                         
-                        Create a lesson that specifically addresses these errors. 
-                        Ensure the content is appropriate for the level.`
+                        Create a lesson that specifically addresses these errors in ${language}. 
+                        Ensure the content matches the ${userLevel} level.`
                     }
                 ]
             })
@@ -244,8 +205,8 @@ export async function generatePersonalizedLesson(
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`AI Generation API failed: ${response.status} ${response.statusText}`, errorText);
-            throw new Error(`AI Generation API failed: ${response.status} ${errorText}`);
+            console.error(`AI Generation API failed: ${response.status}`, errorText);
+            throw new Error(`AI Generation API failed: ${response.status}`);
         }
 
         const data = await response.json();
@@ -256,11 +217,10 @@ export async function generatePersonalizedLesson(
 
         const lessonData = JSON.parse(content);
 
-        // Add required default fields that AI might miss or get wrong
         return {
             ...lessonData,
-            isActive: true, // Auto-activate
-            order: 999, // Put at the end or handle sorting later
+            isActive: true,
+            order: 999,
             requiredVocabulary: 0,
             requiredGrammar: 0,
             requiredReading: 0,
@@ -271,6 +231,6 @@ export async function generatePersonalizedLesson(
 
     } catch (error) {
         console.error("Error generating personalized lesson:", error);
-        return null; // Fail gracefully
+        return null;
     }
 }
