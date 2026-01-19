@@ -171,9 +171,15 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                 {/* Status Message */}
                 <div className="flex-1">
                     {checkStatus === 'incorrect' && (
-                        <div className="flex items-center gap-2 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-xl inline-flex animate-pulse">
-                            <X className="w-5 h-5" />
-                            <span>Try again!</span>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-xl inline-flex animate-pulse">
+                                <X className="w-5 h-5" />
+                                <span>Not quite right...</span>
+                            </div>
+                            <div className="block">
+                                <p className="text-xs text-gray-400 uppercase font-black mb-1">Correct Answer:</p>
+                                <p className="text-brand-dark font-bold text-lg">{lesson.targetSentence}</p>
+                            </div>
                         </div>
                     )}
                     {checkStatus === 'correct' && (

@@ -28,7 +28,8 @@ PEDAGOGICAL RULES:
 3. 'targetSentence' MUST be the ${language} translation.
 4. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
 5. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
-6. VOCABULARY SCAFFOLDING: 'text-input' exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. Never introduce a new word in a typing exercise. Give the user a chance to see the spelling in tiles first.
+6. VOCABULARY SCAFFOLDING: 'text-input' (typing) exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. 
+7. STRICT NEGATIVE CONSTRAINT: NEVER introduce a new word in a typing exercise. If a word hasn't appeared in a tile exercise earlier in the lesson, DO NOT include it in a typing exercise. The user MUST see the spelling in tiles before being asked to type it.
 
 JSON Structure:
 {
@@ -170,6 +171,7 @@ export async function generatePersonalizedLesson(
                         6. 'targetSentence' MUST be in ${language}.
                         7. 'correctTranslation' MUST be in English.
                         8. SCAFFOLDING: Do not use a word in a 'text-input' exercise unless it was introduced in a 'drag-drop' exercise earlier in the three-step sequence. Introduction MUST come before typing practice.
+9. NEGATIVE CONSTRAINT: Strictly FORBIDDEN to use unknown vocabulary in 'text-input' slots. If the student hasn't 'built' the word with tiles yet, they cannot be expected to 'type' it yet. Introduction via tiles is mandatory for every single new word.
                         
                         JSON Structure:
                         {
