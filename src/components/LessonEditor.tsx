@@ -34,7 +34,9 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
         order: 0,
         type: 'text-input',
         category: 'standard',
-        scrambledOptions: []
+        scrambledOptions: [],
+        exercises: [],
+        isAiGenerated: false
     });
 
     const [showPreview, setShowPreview] = useState(false);
@@ -66,7 +68,10 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
                 order: lesson.order,
                 type: lesson.type || 'text-input',
                 category: lesson.category || 'standard',
-                scrambledOptions: lesson.scrambledOptions || []
+                scrambledOptions: lesson.scrambledOptions || [],
+                exercises: lesson.exercises || [],
+                isAiGenerated: !!lesson.isAiGenerated,
+                generatedFromMistakes: lesson.generatedFromMistakes || []
             });
         }
     }, [lesson]);
@@ -309,7 +314,7 @@ export default function LessonEditor({ lesson, onSave, onCancel, userId }: Lesso
                                 <div key={key}>
                                     <label className="block text-sm font-semibold text-brand-dark mb-2 flex items-center justify-between">
                                         <span>{label}</span>
-                                        <span className="text-lg font-bold" style={{ color }}>{formData[key as keyof typeof formData]}</span>
+                                        <span className="text-lg font-bold" style={{ color }}>{formData[key as keyof typeof formData] as number}</span>
                                     </label>
                                     <input
                                         type="range"
