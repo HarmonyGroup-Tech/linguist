@@ -450,13 +450,25 @@ export default function LearnerDashboard() {
 
                             <button
                                 onClick={async () => {
+                                    // 1. Check if there's already an available lesson
+                                    const nextAvailable = availableLessons.find(l =>
+                                        (!l.category || l.category === 'standard') &&
+                                        !userSkills.completedLessons.includes(l.id!)
+                                    );
+
+                                    if (nextAvailable) {
+                                        handleLessonSelect(nextAvailable);
+                                        return;
+                                    }
+
+                                    // 2. Otherwise generate a new one
                                     setIsGenerating(true);
                                     try {
                                         const { generatePersonalizedLesson } = await import('../services/ai');
                                         const newLessonData = await generatePersonalizedLesson(
                                             [], // No new mistakes, just progression
-                                            `Progress: ${userSkills.totalXP} XP`,
-                                            "General Progression",
+                                            "Absolute Beginner",
+                                            "Introduction",
                                             userSkills.targetLanguage || "German"
                                         );
 

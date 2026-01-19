@@ -19,16 +19,17 @@ export async function generateLesson(topic: string, level: string, language: str
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are a language teacher. Generate a language lesson snippet in ${language} based on valid literary works.
+                        "content": `You are a language teacher. Generate a language lesson snippet in ${language} for a COMPLETE BEGINNER starting from absolute scratch.
             
 CRITICAL: You MUST respond with ONLY valid JSON - no markdown formatting, no code blocks, no extra text.
+CRITICAL: Use ONLY the most basic common words (e.g., 'hello', 'the', 'is', 'book', 'man', 'woman'). No complex literary metaphors.
 
 The JSON must follow this exact structure:
 {
-  "sourceTitle": "Title of the book",
-  "sourceAuthor": "Author name",
-  "context": "A paragraph of text with 3-4 sentences in ${language}.",
-  "targetSentence": "One specific sentence from the context that is suitable for translation."
+  "sourceTitle": "Basic Topic",
+  "sourceAuthor": "Modern Tutor",
+  "context": "A paragraph of text with 2-3 very simple sentences in ${language}.",
+  "targetSentence": "One short, simple sentence from the context suitable for translation."
 }`
                     },
                     {
@@ -161,24 +162,25 @@ export async function generatePersonalizedLesson(
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are an expert ${language} curriculum designer. 
+                        "content": `You are an expert ${language} curriculum designer for students starting from ABSOLUTE SCRATCH. 
                         Create a structured lesson to help a student fix specific mistakes they made while learning ${language}.
                         
                         CRITICAL rules:
                         1. Respond with ONLY valid JSON.
                         2. All instructional content in the 'context' and 'targetSentence' MUST be in ${language}.
-                        3. The 'level' should be a number from 1 to 10 (1=Beginner, 10=Master).
+                        3. Use the SIMPLEST possible vocabulary. Avoid rare words or complex conjugation.
+                        4. The 'level' should be a number from 1 to 10 (1=Beginner, 10=Master). For beginners, stay at 1.
                         
                         JSON Structure:
                         {
                           "title": "Short title in English",
                           "description": "Short description in English",
                           "language": "${language}",
-                          "level": 3,
+                          "level": 1,
                           "type": "text-input",
                           "category": "standard",
-                          "context": "A short paragraph (2-3 sentences) in ${language} using the concepts the student missed.",
-                          "targetSentence": "One specific sentence from the context in ${language}.",
+                          "context": "A very short paragraph (2 simple sentences) in ${language} using basic verbs and nouns.",
+                          "targetSentence": "One short sentence from the context in ${language}.",
                           "correctTranslation": "The English translation of the target sentence.",
                           "vocabularyGain": 5,
                           "grammarGain": 15,
@@ -190,14 +192,14 @@ export async function generatePersonalizedLesson(
                     {
                         "role": "user",
                         "content": `Student's Recent Mistakes: 
-                        ${mistakes.map(m => `- ${m}`).join('\n')}
+                        ${mistakes.length > 0 ? mistakes.map(m => `- ${m}`).join('\n') : "No mistakes yet - just starting out!"}
                         
-                        Desired Complexity: ${userLevel}
+                        Current Experience: This student is starting from COMPLETE SCRATCH.
                         Focus Language: ${language}
                         Topic Context: ${topic}
                         
-                        Create a lesson that specifically addresses these errors in ${language}. 
-                        Ensure the content matches the ${userLevel} level.`
+                        Create a lesson that is extremely accessible for someone who knows zero words in ${language}. 
+                        Ensure the content matches Level 1 (Absolute Beginner).`
                     }
                 ]
             })
