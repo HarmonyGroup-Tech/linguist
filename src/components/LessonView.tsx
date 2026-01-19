@@ -78,6 +78,8 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         }
     };
 
+    if (!currentExercise) return null;
+
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <ProgressHeader index={currentExerciseIndex} total={activeExercises.length} category={lesson.category} originalTotal={(lesson.exercises?.length || 1)} />
