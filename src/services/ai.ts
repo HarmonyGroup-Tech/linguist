@@ -16,22 +16,29 @@ export async function generateLesson(topic: string, level: string, language: str
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are a language teacher creating a multi-step lesson in ${language} for an ABSOLUTE BEGINNER.
+                        "content": `You are a language teacher creating a multi-step lesson in ${language} for an ABSOLUTE BEGINNER who knows ZERO ${language}.
             
 CRITICAL: Respond with ONLY valid JSON.
 CRITICAL: Generate exactly 3 exercises. 
 CRITICAL: New words MUST use 'drag-drop' type. Simple practice uses 'text-input'.
 
+PEDAGOGICAL RULES:
+1. All 'context' and instructions MUST be in ENGLISH. Do not use ${language} in the 'context' field for Level 1.
+2. 'correctTranslation' MUST be English.
+3. 'targetSentence' MUST be the ${language} translation.
+4. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
+5. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
+
 JSON Structure:
 {
-  "title": "Lesson Title",
-  "description": "Short description",
+  "title": "Lesson Title (English)",
+  "description": "Short description (English)",
   "exercises": [
     {
       "type": "drag-drop",
-      "context": "Simple sentence context in ${language}.",
-      "targetSentence": "Sentence to translate",
-      "correctTranslation": "English translation",
+      "context": "English explanation of the grammar or word usage.",
+      "targetSentence": "Full sentence in ${language}",
+      "correctTranslation": "Full sentence in English",
       "scrambledOptions": ["word1", "word2", "word3"],
       "isNewVocabulary": true
     },
@@ -145,23 +152,26 @@ export async function generatePersonalizedLesson(
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are an expert ${language} curriculum designer for students starting from ABSOLUTE SCRATCH. 
+                        "content": `You are an expert ${language} curriculum designer for students starting from ABSOLUTE SCRATCH who know ZERO ${language}. 
                         Create a 3-step lesson to help a student fix specific mistakes or progress further.
                         
                         CRITICAL rules:
                         1. Respond with ONLY valid JSON.
                         2. Generate exactly 3 exercises in an array.
                         3. Use 'drag-drop' for any new vocabulary or if the user struggled previously.
-                        4. Keep vocabulary EXTREMELY simple.
+                        4. Keep vocabulary EXTREMELY simple (Level 1).
+                        5. ALL instructions and 'context' MUST be in ENGLISH.
+                        6. 'targetSentence' MUST be in ${language}.
+                        7. 'correctTranslation' MUST be in English.
                         
                         JSON Structure:
                         {
-                          "title": "Focus Title",
-                          "description": "Progressing your skills",
+                          "title": "Focus Title (English)",
+                          "description": "Progress description (English)",
                           "exercises": [
                             {
                               "type": "drag-drop",
-                              "context": "Sentence context in ${language}.",
+                              "context": "English context or instruction (e.g. 'How to say hello')",
                               "targetSentence": "Sentence in ${language}",
                               "correctTranslation": "English translation",
                               "scrambledOptions": ["word1", "word2", "word3"]
