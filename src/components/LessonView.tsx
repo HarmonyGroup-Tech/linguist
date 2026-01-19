@@ -129,11 +129,17 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                             {currentExercise.correctTranslation}
                                         </p>
                                         <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700 text-lg italic text-gray-400">
-                                            {parts[0]}
-                                            <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50 not-italic">
-                                                ...
-                                            </span>
-                                            {parts[1]}
+                                            {currentExercise.context.includes(currentExercise.targetSentence) ? (
+                                                <>
+                                                    {parts[0]}
+                                                    <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50 not-italic">
+                                                        ...
+                                                    </span>
+                                                    {parts[1]}
+                                                </>
+                                            ) : (
+                                                currentExercise.context
+                                            )}
                                         </div>
                                     </div>
 

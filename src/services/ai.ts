@@ -31,7 +31,8 @@ PEDAGOGICAL RULES:
 7. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
 8. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
 9. VOCABULARY SCAFFOLDING: 'text-input' (typing) exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. 
-10. STRICT NEGATIVE CONSTRAINT: NEVER introduce a new word in a typing exercise. If a word hasn't appeared in a tile exercise earlier in the lesson, DO NOT include it in a typing exercise. The user MUST see the spelling in tiles before being asked to type it.
+11. ABSOLUTELY NO ANSWER LEAKS: Never include the 'targetSentence' or its literal translation in the 'description' or 'context' fields. These fields are for pedagogical hints only.
+12. For 'context', if you mention the word/phrase, use English or explain its usage without giving away the full 'targetSentence'.
 
 JSON Structure:
 {
@@ -110,7 +111,9 @@ export async function generateClientRequest(language: string = "German", userXP:
                           "targetSentence": "The specific sentence in ${language}.",
                           "correctTranslation": "Accurate English translation.",
                           "xpReward": 100
-                        }`
+                        }
+                        
+                        CRITICAL: The 'description' and 'context' MUST NOT leak the final answer. Do not say things like 'Translate: Hello' in the description. Just describe the scenario.`
                     },
                     {
                         "role": "user",
@@ -174,6 +177,7 @@ export async function generatePersonalizedLesson(
                         8. 'correctTranslation' MUST be in English.
                         9. SCAFFOLDING: Do not use a word in a 'text-input' exercise unless it was introduced in a 'drag-drop' exercise earlier in the three-step sequence. Introduction MUST come before typing practice.
 10. NEGATIVE CONSTRAINT: Strictly FORBIDDEN to use unknown vocabulary in 'text-input' slots. If the student hasn't 'built' the word with tiles yet, they cannot be expected to 'type' it yet. Introduction via tiles is mandatory for every single new word.
+11. ANSWER LEAK GUARD: Do not put the target sentence or its answer in the 'description' or 'context' fields. English descriptions only.
                         
                         JSON Structure:
                         {
