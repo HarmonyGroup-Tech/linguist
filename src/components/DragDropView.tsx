@@ -5,7 +5,7 @@ import { Check, X, ArrowRight, RotateCcw } from 'lucide-react';
 
 interface DragDropViewProps {
     lesson: Lesson;
-    onComplete: (answer: string) => Promise<void> | void;
+    onComplete: (answer: string, isCorrect: boolean) => Promise<void> | void;
     loading?: boolean;
 }
 
@@ -61,12 +61,13 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
 
         if (isCorrect) {
             setCheckStatus('correct');
-            await onComplete(userAnswer);
         } else {
             setCheckStatus('incorrect');
             setShake(true);
             setTimeout(() => setShake(false), 500);
         }
+
+        await onComplete(userAnswer, isCorrect);
     };
 
     const splitContext = () => {
@@ -101,11 +102,20 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                 </div>
 
                 <div className="text-xl leading-loose font-serif text-gray-700">
-                    {prefix}
-                    <span className="bg-brand-yellow/30 px-1 py-0.5 rounded mx-1 font-medium border-b-2 border-brand-yellow/50">
-                        {target}
-                    </span>
-                    {suffix}
+                    <p className="mb-4 text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4" />
+                        Translate this sentence
+                    </p>
+                    <p className="text-2xl font-bold text-brand-dark mb-6">
+                        {lesson.targetSentence}
+                    </p>
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-lg italic text-gray-500">
+                        {prefix}
+                        <span className="bg-brand-yellow/30 px-1 py-0.5 rounded mx-1 font-medium border-b-2 border-brand-yellow/50 text-brand-dark not-italic">
+                            {target}
+                        </span>
+                        {suffix}
+                    </div>
                 </div>
             </div>
 

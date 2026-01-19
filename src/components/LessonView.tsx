@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, RefreshCw, Send, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Book, RefreshCw, Send, Sparkles, CheckCircle2, X } from 'lucide-react';
 
 import { Lesson, Exercise } from '../services/lessonService';
 import DragDropView from './DragDropView';
@@ -15,56 +15,88 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [showStatus, setShowStatus] = useState<'success' | 'failure' | 'none'>('none');
+    const [failedExercises, setFailedExercises] = useState<Exercise[]>([]);
+    const [lessonFinished, setLessonFinished] = useState(false);
+
+    // Dynamic list of exercises that can grow if user fails
+    const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
 
     // List of exercises: if provided, use them; otherwise, create a virtual one from legacy fields
-    const exercises: Exercise[] = lesson.exercises && lesson.exercises.length > 0
-        ? lesson.exercises
-        : [{
-            type: lesson.type,
-            context: lesson.context,
-            targetSentence: lesson.targetSentence,
-            correctTranslation: lesson.correctTranslation,
-            scrambledOptions: lesson.scrambledOptions
-        }];
+    useEffect(() => {
+        const initial = lesson.exercises && lesson.exercises.length > 0
+            ? lesson.exercises
+            : [{
+                type: lesson.type,
+                context: lesson.context,
+                targetSentence: lesson.targetSentence,
+                correctTranslation: lesson.correctTranslation,
+                scrambledOptions: lesson.scrambledOptions
+            }];
+        setActiveExercises(initial);
+    }, [lesson]);
 
-    const currentExercise = exercises[currentExerciseIndex];
+    const currentExercise = activeExercises[currentExerciseIndex];
 
-    // Reset state when lesson or exercise changes
+    // Reset state when exercise changes
     useEffect(() => {
         setSubmitted(false);
-        setShowSuccess(false);
+        setShowStatus('none');
         setInput('');
-    }, [lesson.id, currentExerciseIndex]);
+    }, [currentExerciseIndex, lesson.id]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
-        handleStepComplete(input);
+
+        const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+        const isCorrect = normalize(input) === normalize(currentExercise.correctTranslation);
+
+        handleStepComplete(input, isCorrect);
     };
 
-    const handleStepComplete = (answer: string) => {
+    const handleStepComplete = (answer: string, isCorrect: boolean) => {
         setSubmitted(true);
 
-        setTimeout(() => {
-            setShowSuccess(true);
+        if (isCorrect) {
+            setShowStatus('success');
             setTimeout(async () => {
-                if (currentExerciseIndex < exercises.length - 1) {
-                    setCurrentExerciseIndex(prev => prev + 1);
-                } else {
-                    await onComplete(answer);
-                }
-            }, 1200);
-        }, 800);
+                moveToNext();
+            }, 1500);
+        } else {
+            setShowStatus('failure');
+            // Add to failed list if not already there (to avoid infinite loop if they keep failing the redo)
+            // Actually, the requirement says "at the end show the questions user failed AGAIN", 
+            // implying they should keep appearing until right? 
+            // "At the end of the lesson, show the question the user failed again to fix them"
+            // Let's add it to the end of activeExercises.
+            setActiveExercises(prev => [...prev, currentExercise]);
+
+            // Still move to next after showing answer
+            setTimeout(() => {
+                moveToNext();
+            }, 3000); // Give more time to read correct answer
+        }
     };
+
+    const moveToNext = async () => {
+        if (currentExerciseIndex < activeExercises.length - 1) {
+            setCurrentExerciseIndex(prev => prev + 1);
+        } else {
+            setLessonFinished(true);
+            await onComplete(input);
+        }
+    };
+
+    if (!currentExercise) return null;
 
     if (currentExercise.type === 'drag-drop') {
         return (
             <div className="space-y-6">
-                <ProgressHeader index={currentExerciseIndex} total={exercises.length} category={lesson.category} />
+                <ProgressHeader index={currentExerciseIndex} total={activeExercises.length} category={lesson.category} originalTotal={(lesson.exercises?.length || 1)} />
                 <DragDropView
                     lesson={{ ...lesson, ...currentExercise } as any}
-                    onComplete={handleStepComplete}
+                    onComplete={(ans, corr) => handleStepComplete(ans, corr)}
                     loading={loading}
                 />
             </div>
@@ -75,7 +107,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
-            <ProgressHeader index={currentExerciseIndex} total={exercises.length} category={lesson.category} />
+            <ProgressHeader index={currentExerciseIndex} total={activeExercises.length} category={lesson.category} originalTotal={(lesson.exercises?.length || 1)} />
 
             <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-10 shadow-xl border border-gray-100 dark:border-gray-700 relative overflow-hidden">
                 {/* Header Info */}
@@ -124,9 +156,9 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10"
+                                        className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-col gap-4 z-10 p-8 text-center"
                                     >
-                                        {showSuccess ? (
+                                        {showStatus === 'success' ? (
                                             <>
                                                 <motion.div
                                                     initial={{ scale: 0 }}
@@ -136,8 +168,30 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                                     <CheckCircle2 className="w-10 h-10 text-green-600" />
                                                 </motion.div>
                                                 <p className="text-green-600 font-bold text-xl">
-                                                    {currentExerciseIndex < exercises.length - 1 ? 'Moving to next step...' : 'Lesson Complete!'}
+                                                    Perfect!
                                                 </p>
+                                            </>
+                                        ) : showStatus === 'failure' ? (
+                                            <>
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center"
+                                                >
+                                                    <X className="w-10 h-10 text-red-600" />
+                                                </motion.div>
+                                                <div className="space-y-2">
+                                                    <p className="text-red-600 font-bold text-xl">Not quite...</p>
+                                                    <div className="pt-2">
+                                                        <p className="text-xs text-gray-400 uppercase font-black">Correct Answer</p>
+                                                        <p className="text-brand-dark dark:text-white font-medium text-lg">
+                                                            {currentExercise.correctTranslation}
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-xs text-gray-400 italic pt-2">
+                                                        We'll try this one again at the end!
+                                                    </p>
+                                                </div>
                                             </>
                                         ) : (
                                             <>
@@ -160,9 +214,11 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                         <button
                             type="submit"
                             disabled={!input.trim() || submitted || loading}
-                            className="px-10 py-4 bg-brand-yellow text-brand-dark font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-3 text-lg"
+                            className={`px-10 py-4 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-3 text-lg
+                                ${submitted ? 'opacity-0 pointer-events-none' : 'bg-brand-yellow text-brand-dark'}
+                            `}
                         >
-                            {currentExerciseIndex < exercises.length - 1 ? 'Next Step' : 'Finish Lesson'}
+                            {currentExerciseIndex < activeExercises.length - 1 ? 'Next Step' : 'Finish Lesson'}
                             <Send className="w-5 h-5" />
                         </button>
                     </div>
@@ -172,23 +228,32 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     );
 }
 
-function ProgressHeader({ index, total, category }: { index: number, total: number, category?: string }) {
+function ProgressHeader({ index, total, category, originalTotal }: { index: number, total: number, category?: string, originalTotal: number }) {
     return (
         <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
-                    {Array.from({ length: total }).map((_, i) => (
-                        <div
-                            key={i}
-                            className={`h-2 rounded-full transition-all duration-500 ${i < index ? 'w-8 bg-green-500' :
+                    {Array.from({ length: total }).map((_, i) => {
+                        const isRedo = i >= originalTotal;
+                        return (
+                            <div
+                                key={i}
+                                className={`h-2 rounded-full transition-all duration-500 ${i < index ? 'w-8 bg-green-500' :
                                     i === index ? 'w-12 bg-brand-yellow shadow-[0_0_10px_rgba(255,204,0,0.5)]' :
-                                        'w-8 bg-gray-200 dark:bg-gray-700'
-                                }`}
-                        />
-                    ))}
+                                        isRedo ? 'w-4 bg-orange-100 dark:bg-orange-900/30' : 'w-8 bg-gray-200 dark:bg-gray-700'
+                                    }`}
+                            />
+                        );
+                    })}
                 </div>
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    Step {index + 1} of {total}
+                    {index >= originalTotal ? (
+                        <span className="text-orange-500 flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3" /> Redo Mistake
+                        </span>
+                    ) : (
+                        `Step ${index + 1} of ${originalTotal}`
+                    )}
                 </span>
             </div>
             {category === 'client-request' && (
