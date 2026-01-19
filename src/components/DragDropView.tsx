@@ -17,13 +17,8 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
 
     useEffect(() => {
         // Initialize words
-        // Use scrambledOptions if available, otherwise generate from correctTranslation
-        let words: string[] = [];
-        if (lesson.scrambledOptions && lesson.scrambledOptions.length > 0) {
-            words = [...lesson.scrambledOptions];
-        } else {
-            words = lesson.correctTranslation.split(' ');
-        }
+        // Use targetSentence for tiles (The language being learned)
+        let words: string[] = lesson.targetSentence.split(' ');
 
         // Shuffle words and add IDs
         const shuffled = words
@@ -57,7 +52,8 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
         // Improve flexible matching (case check, punctuation)
         const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
 
-        const isCorrect = normalize(userAnswer) === normalize(lesson.correctTranslation);
+        // Check against targetSentence (The language being learned)
+        const isCorrect = normalize(userAnswer) === normalize(lesson.targetSentence);
 
         if (isCorrect) {
             setCheckStatus('correct');
@@ -104,15 +100,15 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
                 <div className="text-xl leading-loose font-serif text-gray-700">
                     <p className="mb-4 text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
                         <ArrowRight className="w-4 h-4" />
-                        Translate this sentence
+                        Translate to {lesson.language}
                     </p>
                     <p className="text-2xl font-bold text-brand-dark mb-6">
-                        {lesson.targetSentence}
+                        {lesson.correctTranslation}
                     </p>
                     <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-lg italic text-gray-500">
                         {prefix}
                         <span className="bg-brand-yellow/30 px-1 py-0.5 rounded mx-1 font-medium border-b-2 border-brand-yellow/50 text-brand-dark not-italic">
-                            {target}
+                            ...
                         </span>
                         {suffix}
                     </div>

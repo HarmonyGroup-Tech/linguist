@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, RefreshCw, Send, Sparkles, CheckCircle2, X } from 'lucide-react';
+import { Book, RefreshCw, Send, Sparkles, CheckCircle2, X, ArrowRight } from 'lucide-react';
 
 import { Lesson, Exercise } from '../services/lessonService';
 import DragDropView from './DragDropView';
@@ -50,7 +50,8 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         if (!input.trim()) return;
 
         const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
-        const isCorrect = normalize(input) === normalize(currentExercise.correctTranslation);
+        // Check against targetSentence (The language being learned)
+        const isCorrect = normalize(input) === normalize(currentExercise.targetSentence);
 
         handleStepComplete(input, isCorrect);
     };
@@ -127,11 +128,20 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
 
                 {/* Context Display */}
                 <div className="text-xl leading-relaxed text-gray-600 dark:text-gray-300 font-serif mb-10">
-                    {parts[0]}
-                    <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50">
-                        {currentExercise.targetSentence}
-                    </span>
-                    {parts[1]}
+                    <p className="mb-4 text-sm font-bold text-brand-yellow uppercase tracking-widest flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4" />
+                        Translate to {lesson.language}
+                    </p>
+                    <p className="text-3xl font-bold text-brand-dark dark:text-white mb-8">
+                        {currentExercise.correctTranslation}
+                    </p>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700 text-lg italic text-gray-400">
+                        {parts[0]}
+                        <span className="bg-brand-yellow/30 text-brand-dark dark:text-white font-medium px-2 py-0.5 rounded mx-1 box-decoration-clone border-b-2 border-brand-yellow/50 not-italic">
+                            ...
+                        </span>
+                        {parts[1]}
+                    </div>
                 </div>
 
                 {/* Interaction Area */}
@@ -161,15 +171,19 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                         {showStatus === 'success' ? (
                                             <>
                                                 <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                    className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
+                                                    initial={{ scale: 0, rotate: -45 }}
+                                                    animate={{ scale: [0, 1.2, 1], rotate: 0 }}
+                                                    className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shadow-lg shadow-green-200"
                                                 >
-                                                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                                                    <CheckCircle2 className="w-14 h-14 text-green-600" />
                                                 </motion.div>
-                                                <p className="text-green-600 font-bold text-xl">
-                                                    Perfect!
-                                                </p>
+                                                <motion.p
+                                                    initial={{ y: 20, opacity: 0 }}
+                                                    animate={{ y: 0, opacity: 1 }}
+                                                    className="text-green-600 font-black text-2xl tracking-tight"
+                                                >
+                                                    EXCELLENT!
+                                                </motion.p>
                                             </>
                                         ) : showStatus === 'failure' ? (
                                             <>
@@ -185,7 +199,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                                     <div className="pt-2">
                                                         <p className="text-xs text-gray-400 uppercase font-black">Correct Answer</p>
                                                         <p className="text-brand-dark dark:text-white font-medium text-lg">
-                                                            {currentExercise.correctTranslation}
+                                                            {currentExercise.targetSentence}
                                                         </p>
                                                     </div>
                                                     <p className="text-xs text-gray-400 italic pt-2">
