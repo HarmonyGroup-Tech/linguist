@@ -56,6 +56,24 @@ export const ProjectService = {
             console.error("Error fetching projects: ", e);
             return [];
         }
+    },
+
+    async getPendingProjects(): Promise<Project[]> {
+        try {
+            // Fetch projects that are in 'Draft' or 'Translating' status
+            const q = query(
+                collection(db, 'projects'),
+                where("status", "in", ['Draft', 'Translating'])
+            );
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Project));
+        } catch (e) {
+            console.error("Error fetching pending projects: ", e);
+            return [];
+        }
     }
 };
 

@@ -318,9 +318,14 @@ export default function LearnerDashboard() {
                                     setIsGenerating(true);
                                     try {
                                         const { generatePersonalizedLesson, generateClientRequest } = await import('../services/ai');
+                                        const { ProjectService } = await import('../services/db');
 
-                                        // Trigger Client Work every 3-7 lessons if level > 5 (approx 500 XP)
-                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP >= 500);
+                                        // Check for real pending projects first
+                                        const pendingProjects = await ProjectService.getPendingProjects();
+                                        const hasRealWork = pendingProjects.length > 0;
+
+                                        // Trigger Client Work every 3-7 lessons if level > 5 (approx 500 XP) AND real work exists
+                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP >= 500) && hasRealWork;
 
                                         let newLessonData;
                                         if (shouldTriggerClient) {

@@ -23,13 +23,15 @@ CRITICAL: Generate exactly 3 exercises.
 CRITICAL: New words MUST use 'drag-drop' type. Simple practice uses 'text-input'.
 
 PEDAGOGICAL RULES:
-1. All 'context' and instructions MUST be in ENGLISH. Do not use ${language} in the 'context' field for Level 1.
-2. 'correctTranslation' MUST be English.
-3. 'targetSentence' MUST be the ${language} translation.
-4. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
-5. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
-6. VOCABULARY SCAFFOLDING: 'text-input' (typing) exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. 
-7. STRICT NEGATIVE CONSTRAINT: NEVER introduce a new word in a typing exercise. If a word hasn't appeared in a tile exercise earlier in the lesson, DO NOT include it in a typing exercise. The user MUST see the spelling in tiles before being asked to type it.
+2. LEVEL CALIBRATION: The user is an ABSOLUTE BEGINNER. Use extremely basic vocabulary (pronouns, 'to be', simple nouns).
+3. SLOW PROGRESSION: Introduce ONLY 1-2 NEW WORDS per lesson. Use familiar words for the rest of the sentence to build confidence.
+4. REPETITION: Prioritize repeating words the user has likely seen in previous basic introductions.
+5. 'correctTranslation' MUST be English.
+6. 'targetSentence' MUST be the ${language} translation.
+7. 'scrambledOptions' MUST be the individual words of the 'targetSentence'.
+8. ABSOLUTELY NO ${language} in anything except 'targetSentence' and 'scrambledOptions'.
+9. VOCABULARY SCAFFOLDING: 'text-input' (typing) exercises MUST ONLY use words that were introduced in a 'drag-drop' exercise within the SAME lesson. 
+10. STRICT NEGATIVE CONSTRAINT: NEVER introduce a new word in a typing exercise. If a word hasn't appeared in a tile exercise earlier in the lesson, DO NOT include it in a typing exercise. The user MUST see the spelling in tiles before being asked to type it.
 
 JSON Structure:
 {
@@ -165,13 +167,13 @@ export async function generatePersonalizedLesson(
                         CRITICAL rules:
                         1. Respond with ONLY valid JSON.
                         2. Generate exactly 3 exercises in an array.
-                        3. Use 'drag-drop' for any new vocabulary or if the user struggled previously.
-                        4. Keep vocabulary EXTREMELY simple (Level 1).
-                        5. ALL instructions and 'context' MUST be in ENGLISH.
-                        6. 'targetSentence' MUST be in ${language}.
-                        7. 'correctTranslation' MUST be in English.
-                        8. SCAFFOLDING: Do not use a word in a 'text-input' exercise unless it was introduced in a 'drag-drop' exercise earlier in the three-step sequence. Introduction MUST come before typing practice.
-9. NEGATIVE CONSTRAINT: Strictly FORBIDDEN to use unknown vocabulary in 'text-input' slots. If the student hasn't 'built' the word with tiles yet, they cannot be expected to 'type' it yet. Introduction via tiles is mandatory for every single new word.
+                        4. TARGET LEVEL: Level 1 (Absolute Beginner).
+                        5. SLOW GROWTH: INTRODUCE ONLY 1-2 NEW WORDS. Focus on fixing mistakes using 80% familiar words to maintain confidence.
+                        6. REPETITION: Heavily prioritize repeating basic pronouns and high-frequency nouns.
+                        7. 'targetSentence' MUST be in ${language}.
+                        8. 'correctTranslation' MUST be in English.
+                        9. SCAFFOLDING: Do not use a word in a 'text-input' exercise unless it was introduced in a 'drag-drop' exercise earlier in the three-step sequence. Introduction MUST come before typing practice.
+10. NEGATIVE CONSTRAINT: Strictly FORBIDDEN to use unknown vocabulary in 'text-input' slots. If the student hasn't 'built' the word with tiles yet, they cannot be expected to 'type' it yet. Introduction via tiles is mandatory for every single new word.
                         
                         JSON Structure:
                         {
