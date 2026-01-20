@@ -3,7 +3,7 @@ import LessonView from '../components/LessonView';
 // import SkillProgress from '../components/SkillProgress'; -- Removed for UX simplification
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
-import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles } from 'lucide-react';
+import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -215,13 +215,20 @@ export default function LearnerDashboard() {
 
                         <div className="flex items-center gap-1 md:gap-3">
                             <button
+                                onClick={() => navigate('/settings')}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
+                                title="Privacy & Settings"
+                            >
+                                <Settings className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+                            <button
                                 onClick={toggleTheme}
                                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
                                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                             >
                                 {theme === 'light' ? <Moon className="w-4 h-4 md:w-5 md:h-5" /> : <Sun className="w-4 h-4 md:w-5 md:h-5" />}
                             </button>
-                            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
+                            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-brand-dark" title="Logout">
                                 <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                             </button>
                         </div>

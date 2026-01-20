@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LessonService, type Lesson } from '../services/lessonService';
 import LessonEditor from '../components/LessonEditor';
-import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp, Upload, Moon, Sun } from 'lucide-react';
+import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp, Upload, Moon, Sun, Settings } from 'lucide-react';
 import { parseCSV } from '../utils/csvParser';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -124,6 +124,13 @@ export default function AdminDashboard() {
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate('/settings')}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
+                            title="Privacy & Settings"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
                         <button
                             onClick={toggleTheme}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"

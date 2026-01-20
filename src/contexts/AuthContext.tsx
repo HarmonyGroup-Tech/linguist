@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
-import { onAuthStateChanged, type User, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged, type User, signOut as firebaseSignOut, deleteUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { ProjectService } from '../services/db';
+import { LessonService, UserSkillsService } from '../services/lessonService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -9,6 +11,7 @@ interface AuthContextType {
     isAdmin: boolean;
     loading: boolean;
     logout: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -49,8 +52,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = () => firebaseSignOut(auth);
 
+    const deleteAccount = async () => {
+        if (!currentUser) throw new Error("No user logged in");
+
+        const userId = currentUser.uid;
+
+        try {
+            // 1. Clean up Firestore data (Projects)
+            await ProjectService.deleteUserProjects(userId);
+
+            // 2. Clean up Learning data (Skills, Progress, AI Lessons)
+            await UserSkillsService.deleteUserData(userId);
+
+            // 3. Delete Auth User
+            await deleteUser(currentUser);
+        } catch (e) {
+            console.error("Account deletion failed:", e);
+            throw e;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ currentUser, userRole, isAdmin, loading, logout }}>
+        <AuthContext.Provider value={{ currentUser, userRole, isAdmin, loading, logout, deleteAccount }}>
             {!loading && children}
         </AuthContext.Provider>
     );

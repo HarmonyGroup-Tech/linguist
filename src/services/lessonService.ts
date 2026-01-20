@@ -528,5 +528,27 @@ export const UserSkillsService = {
             console.error("Error updating user skills:", e);
             throw e;
         }
+    },
+
+    async deleteUserData(userId: string): Promise<void> {
+        try {
+            // 1. Delete userSkills document
+            await deleteDoc(doc(db, 'userSkills', userId));
+
+            // 2. Delete user document from 'users'
+            await deleteDoc(doc(db, 'users', userId));
+
+            // 3. Delete AI generated lessons created by this user
+            const q = query(
+                collection(db, 'lessons'),
+                where('createdBy', '==', userId)
+            );
+            const querySnapshot = await getDocs(q);
+            const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+        } catch (e) {
+            console.error("Error deleting user data:", e);
+            throw e;
+        }
     }
 };

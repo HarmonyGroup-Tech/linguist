@@ -8,6 +8,7 @@ import {
     doc,
     getDoc,
     updateDoc,
+    deleteDoc,
     increment
 } from 'firebase/firestore';
 
@@ -73,6 +74,18 @@ export const ProjectService = {
         } catch (e) {
             console.error("Error fetching pending projects: ", e);
             return [];
+        }
+    },
+
+    async deleteUserProjects(userId: string): Promise<void> {
+        try {
+            const q = query(collection(db, 'projects'), where("ownerId", "==", userId));
+            const querySnapshot = await getDocs(q);
+            const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+        } catch (e) {
+            console.error("Error deleting user projects:", e);
+            throw e;
         }
     }
 };

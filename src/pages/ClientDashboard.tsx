@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ProjectService } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, FileText, Feather, LayoutGrid } from 'lucide-react';
+import { LogOut, Upload, FileText, Feather, LayoutGrid, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ClientDashboard() {
@@ -42,9 +42,18 @@ export default function ClientDashboard() {
                             Linguist <span className="text-gray-400 font-medium ml-2">Publisher Console</span>
                         </h1>
                     </div>
-                    <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark">
-                        <LogOut className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate('/settings')}
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark"
+                            title="Privacy & Settings"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
+                        <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark" title="Logout">
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </header>
 
