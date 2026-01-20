@@ -144,6 +144,15 @@ export default function Login() {
                         >
                             {loading ? <Loader className="w-6 h-6 animate-spin" /> : (isSignup ? 'Create Account' : 'Sign In')}
                         </button>
+
+                        {isSignup && (
+                            <p className="text-[11px] text-center text-gray-400 font-medium px-4 leading-relaxed">
+                                By creating an account, you agree to Linguist's{' '}
+                                <Link to="/privacy" className="text-brand-dark hover:underline font-bold underline decoration-brand-yellow/30">
+                                    Privacy Policy
+                                </Link>
+                            </p>
+                        )}
                     </form>
 
                     <div className="mt-8 text-center bg-gray-50 rounded-xl py-4">

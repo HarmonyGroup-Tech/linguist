@@ -9,6 +9,7 @@ import ClientDashboard from './pages/ClientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import DeleteAccount from './pages/DeleteAccount';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -69,6 +70,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
           </Routes>
         </AuthProvider>
       </Router>
