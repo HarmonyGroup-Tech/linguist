@@ -8,6 +8,7 @@ import LearnerDashboard from './pages/LearnerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
+import DeleteAccount from './pages/DeleteAccount';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -56,6 +57,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/account/delete"
+              element={
+                <ProtectedRoute>
+                  <DeleteAccount />
                 </ProtectedRoute>
               }
             />

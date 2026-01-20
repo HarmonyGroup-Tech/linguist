@@ -173,6 +173,12 @@ export default function Settings() {
                                     </h3>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
                                         Deleting your account will permanently remove all your progress, XP, streaks, and data. This action cannot be undone.
+                                        <button
+                                            onClick={() => navigate('/account/delete')}
+                                            className="text-red-600 dark:text-red-500 font-bold ml-1 hover:underline text-xs"
+                                        >
+                                            Open dedicated deletion page →
+                                        </button>
                                     </p>
                                 </div>
 
