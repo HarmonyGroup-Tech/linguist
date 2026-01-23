@@ -324,6 +324,7 @@ export default function LearnerDashboard() {
                                     setIsGenerating(true);
                                     try {
                                         const next = await LessonService.getNextLesson(userSkills);
+                                        console.log('[Dashboard] Next Step Decision:', next);
 
                                         if (next === 'AI_TRIGGER') {
                                             // Generate personalized AI lesson every 10 lessons

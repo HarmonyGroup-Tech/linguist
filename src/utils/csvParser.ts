@@ -53,10 +53,14 @@ export function parseCSV(csvText: string, createdBy: string): CSVParseResult {
             });
 
             // Validate and convert types
+            // Normalize language (e.g., "german" -> "German")
+            const rawLang = rowData.language || 'German';
+            const normalizedLang = rawLang.charAt(0).toUpperCase() + rawLang.slice(1).toLowerCase();
+
             const lesson: any = {
                 title: rowData.title,
                 description: rowData.description,
-                language: rowData.language,
+                language: normalizedLang,
                 level: parseInt(rowData.level),
                 type: rowData.type as 'text-input' | 'drag-drop',
                 category: rowData.category as 'standard' | 'quotation',

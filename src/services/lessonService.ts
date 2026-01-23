@@ -193,25 +193,38 @@ export const LessonService = {
                 return 'CLIENT_TRIGGER';
             }
 
-            // Otherwise, get next uncompleted admin lesson for the user's language
+            // Otherwise, get next uncompleted platform lesson for the user's language
+            // Ensure language is formatted consistently (e.g., "German")
+            const targetLang = userSkills.targetLanguage || 'German';
+            const formattedLang = targetLang.charAt(0).toUpperCase() + targetLang.slice(1).toLowerCase();
+
+            // We fetch all active lessons for this language
             const q = query(
                 collection(db, 'lessons'),
                 where('isActive', '==', true),
-                where('createdBy', '==', 'ADMIN'),
-                where('language', '==', userSkills.targetLanguage || 'German'),
+                where('language', '==', formattedLang),
                 orderBy('order', 'asc')
             );
 
             const querySnapshot = await getDocs(q);
-            const adminLessons = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                type: doc.data().type || 'text-input',
-                category: doc.data().category || 'standard'
-            } as Lesson));
+
+            // Filter to find platform lessons (not AI, not client tasks)
+            // We prioritize lessons created by the user (uploads) or literal ADMIN
+            const platformLessons = querySnapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    type: doc.data().type || 'text-input',
+                    category: doc.data().category || 'standard'
+                } as Lesson))
+                .filter(lesson =>
+                    !lesson.isAiGenerated &&
+                    lesson.category !== 'client-request' &&
+                    (lesson.createdBy === 'ADMIN' || lesson.createdBy === userSkills.userId)
+                );
 
             // Find first uncompleted lesson
-            const nextLesson = adminLessons.find(lesson =>
+            const nextLesson = platformLessons.find(lesson =>
                 lesson.id && !userSkills.completedLessons.includes(lesson.id)
             );
 
