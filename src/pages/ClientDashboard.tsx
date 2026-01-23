@@ -3,14 +3,17 @@ import { ProjectService } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Upload, FileText, Feather, LayoutGrid, Settings } from 'lucide-react';
+import { SettingsService } from '../services/settingsService';
+import MaintenancePage from './MaintenancePage';
 import { motion } from 'framer-motion';
 
 export default function ClientDashboard() {
     const { logout, currentUser } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
-
     const [projects, setProjects] = useState<any[]>([]);
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
     const refreshProjects = React.useCallback(() => {
         if (currentUser) {
@@ -21,13 +24,29 @@ export default function ClientDashboard() {
     }, [currentUser]);
 
     React.useEffect(() => {
+        checkMaintenance();
         refreshProjects();
     }, [refreshProjects]);
+
+    const checkMaintenance = async () => {
+        try {
+            const settings = await SettingsService.getSettings();
+            setMaintenanceMode(settings.maintenanceMode);
+            setMaintenanceMessage(settings.maintenanceMessage);
+        } catch (e) {
+            console.error('Error checking maintenance mode:', e);
+        }
+    };
 
     const handleLogout = async () => {
         await logout();
         navigate('/');
     };
+
+    // Show maintenance page if maintenance mode is enabled
+    if (maintenanceMode) {
+        return <MaintenancePage message={maintenanceMessage} />;
+    }
 
     return (
         <div className="min-h-screen bg-brand-gray text-brand-dark font-sans">

@@ -14,6 +14,8 @@ import {
     UserSkillsService
 } from '../services/lessonService';
 import { generatePersonalizedLesson } from '../services/ai';
+import { SettingsService } from '../services/settingsService';
+import MaintenancePage from './MaintenancePage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
@@ -29,6 +31,8 @@ export default function LearnerDashboard() {
     const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
     const [nextLingRefill, setNextLingRefill] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
     // Timer for ling refill
     useEffect(() => {
@@ -57,9 +61,20 @@ export default function LearnerDashboard() {
 
     useEffect(() => {
         if (currentUser) {
+            checkMaintenance();
             loadUserData();
         }
     }, [currentUser]);
+
+    const checkMaintenance = async () => {
+        try {
+            const settings = await SettingsService.getSettings();
+            setMaintenanceMode(settings.maintenanceMode);
+            setMaintenanceMessage(settings.maintenanceMessage);
+        } catch (e) {
+            console.error('Error checking maintenance mode:', e);
+        }
+    };
 
     const loadUserData = async () => {
         if (!currentUser) return;
@@ -160,6 +175,11 @@ export default function LearnerDashboard() {
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-yellow"></div>
             </div>
         );
+    }
+
+    // Show maintenance page if maintenance mode is enabled
+    if (maintenanceMode) {
+        return <MaintenancePage message={maintenanceMessage} />;
     }
 
     return (

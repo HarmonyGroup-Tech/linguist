@@ -5,6 +5,7 @@ import { LessonService, type Lesson } from '../services/lessonService';
 import LessonEditor from '../components/LessonEditor';
 import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp, Upload, Moon, Sun, Settings } from 'lucide-react';
 import { parseCSV } from '../utils/csvParser';
+import { SettingsService } from '../services/settingsService';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function AdminDashboard() {
@@ -17,9 +18,12 @@ export default function AdminDashboard() {
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
     const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
     const [uploadResult, setUploadResult] = useState<{ success: number, errors: string[] } | null>(null);
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
     useEffect(() => {
         loadLessons();
+        loadMaintenanceSettings();
     }, []);
 
     const loadLessons = async () => {
@@ -27,6 +31,28 @@ export default function AdminDashboard() {
         const data = await LessonService.getAllLessons();
         setLessons(data);
         setLoading(false);
+    };
+
+    const loadMaintenanceSettings = async () => {
+        try {
+            const settings = await SettingsService.getSettings();
+            setMaintenanceMode(settings.maintenanceMode);
+            setMaintenanceMessage(settings.maintenanceMessage || '');
+        } catch (e) {
+            console.error('Error loading maintenance settings:', e);
+        }
+    };
+
+    const toggleMaintenanceMode = async () => {
+        try {
+            const newMode = !maintenanceMode;
+            await SettingsService.setMaintenanceMode(newMode, maintenanceMessage);
+            setMaintenanceMode(newMode);
+            alert(newMode ? '🔧 Maintenance mode ENABLED. All dashboards are now blocked.' : '✅ Maintenance mode DISABLED. System is accessible.');
+        } catch (e) {
+            console.error('Error toggling maintenance mode:', e);
+            alert('Failed to toggle maintenance mode');
+        }
     };
 
     const handleCreateLesson = async (lessonData: Omit<Lesson, 'id' | 'createdAt'>) => {
@@ -149,6 +175,44 @@ export default function AdminDashboard() {
             </header>
 
             <main className="py-12 px-6 max-w-7xl mx-auto">
+                {/* Maintenance Mode Control */}
+                <div className={`mb-8 p-6 rounded-2xl border-2 ${maintenanceMode ? 'bg-red-50 dark:bg-red-950/20 border-red-500' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                            <h3 className={`text-lg font-bold mb-2 ${maintenanceMode ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                🔧 Maintenance Mode
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                {maintenanceMode
+                                    ? '⚠️ ACTIVE - All dashboards are currently blocked'
+                                    : 'Block access to all dashboards (learner & client) for system maintenance'
+                                }
+                            </p>
+                            {maintenanceMode && (
+                                <div className="mt-3">
+                                    <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Message shown to users:</label>
+                                    <input
+                                        type="text"
+                                        value={maintenanceMessage}
+                                        onChange={(e) => setMaintenanceMessage(e.target.value)}
+                                        placeholder="We're performing system maintenance..."
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={toggleMaintenanceMode}
+                            className={`ml-6 px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-105 active:scale-95 ${maintenanceMode
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                                }`}
+                        >
+                            {maintenanceMode ? '✅ Disable Maintenance' : '🔧 Enable Maintenance'}
+                        </button>
+                    </div>
+                </div>
+
                 {/* Stats Cards */}
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
