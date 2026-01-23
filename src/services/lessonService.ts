@@ -193,11 +193,12 @@ export const LessonService = {
                 return 'CLIENT_TRIGGER';
             }
 
-            // Otherwise, get next uncompleted admin lesson
+            // Otherwise, get next uncompleted admin lesson for the user's language
             const q = query(
                 collection(db, 'lessons'),
                 where('isActive', '==', true),
                 where('createdBy', '==', 'ADMIN'),
+                where('language', '==', userSkills.targetLanguage || 'German'),
                 orderBy('order', 'asc')
             );
 

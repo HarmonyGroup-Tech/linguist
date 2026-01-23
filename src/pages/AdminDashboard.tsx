@@ -84,7 +84,7 @@ export default function AdminDashboard() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const csvText = e.target?.result as string;
-            const { lessons, errors: parseErrors } = parseCSV(csvText, currentUser.uid);
+            const { lessons, errors: parseErrors } = parseCSV(csvText, 'ADMIN');
 
             if (parseErrors.length > 0 && lessons.length === 0) {
                 setUploadResult({ success: 0, errors: parseErrors });
@@ -204,8 +204,8 @@ export default function AdminDashboard() {
                         <button
                             onClick={toggleMaintenanceMode}
                             className={`ml-6 px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-105 active:scale-95 ${maintenanceMode
-                                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-red-600 hover:bg-red-700 text-white'
                                 }`}
                         >
                             {maintenanceMode ? '✅ Disable Maintenance' : '🔧 Enable Maintenance'}
