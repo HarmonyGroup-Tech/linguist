@@ -144,17 +144,6 @@ export default function LearnerDashboard() {
             const lessons = await LessonService.getAvailableLessons(updatedSkills);
             setAvailableLessons(lessons);
 
-            // Decision: After completing, we just reload and let the user click "Start Next Lesson" 
-            // OR the horizontal path will show the next one clearly.
-            // Simplified: No automatic popup since the UX should be "clean".
-
-            // Reset client counter if it was a client request
-            if (currentLesson.category === 'client-request') {
-                await UserSkillsService.updateSkills(currentUser.uid, {
-                    lessonsSinceLastClient: 0
-                });
-            }
-
         } catch (error) {
             console.error('Error completing lesson:', error);
         }
@@ -310,54 +299,108 @@ export default function LearnerDashboard() {
 
                             <button
                                 onClick={async () => {
-                                    // ... logic ...
-                                    const nextAvailable = availableLessons.find(l =>
-                                        (!l.category || l.category === 'standard') &&
-                                        !userSkills.completedLessons.includes(l.id!)
-                                    );
-
-                                    if (nextAvailable) {
-                                        handleLessonSelect(nextAvailable);
-                                        return;
-                                    }
+                                    if (!currentUser || !userSkills) return;
 
                                     setIsGenerating(true);
                                     try {
-                                        const { generatePersonalizedLesson, generateClientRequest } = await import('../services/ai');
-                                        const { ProjectService } = await import('../services/db');
+                                        const next = await LessonService.getNextLesson(userSkills);
 
-                                        const pendingProjects = await ProjectService.getPendingProjects();
-                                        const hasRealWork = pendingProjects.length > 0;
-
-                                        const shouldTriggerClient = (userSkills.lessonsSinceLastClient >= 3) && (userSkills.totalXP >= 500) && hasRealWork;
-
-                                        let newLessonData;
-                                        if (shouldTriggerClient) {
-                                            newLessonData = await generateClientRequest(userSkills.targetLanguage || "German", userSkills.totalXP);
-                                        }
-
-                                        if (!newLessonData) {
-                                            newLessonData = await generatePersonalizedLesson(
-                                                [],
-                                                "Absolute Beginner",
-                                                "Introduction",
+                                        if (next === 'AI_TRIGGER') {
+                                            // Generate personalized AI lesson every 10 lessons
+                                            const { generatePersonalizedLesson } = await import('../services/ai');
+                                            const aiLesson = await generatePersonalizedLesson(
+                                                [], // Could extract recent mistakes here
+                                                `Level ${Math.floor(userSkills.totalXP / 100)}`, // User level as string
+                                                "Personalized Review",
                                                 userSkills.targetLanguage || "German",
                                                 userSkills.totalXP || 0
                                             );
-                                        }
 
-                                        if (newLessonData) {
-                                            const newLessonId = await LessonService.createLesson({
-                                                ...newLessonData,
+                                            const lessonId = await LessonService.createLesson({
+                                                ...aiLesson,
                                                 createdBy: currentUser.uid,
+                                                isAiGenerated: true,
                                                 createdAt: new Date(),
                                                 isActive: true
                                             } as any);
 
-                                            handleLessonSelect({ ...newLessonData, id: newLessonId });
+                                            // Reset AI counter
+                                            await UserSkillsService.updateSkills(currentUser.uid, {
+                                                lessonsSinceAiGeneration: 0
+                                            });
+
+                                            const lesson = await LessonService.getLessonById(lessonId);
+                                            if (lesson) handleLessonSelect(lesson);
+
+                                        } else if (next === 'CLIENT_TRIGGER') {
+                                            // Check if we actually have pending projects
+                                            const { ProjectService } = await import('../services/db');
+                                            const pendingProjects = await ProjectService.getPendingProjects();
+
+                                            if (pendingProjects.length > 0) {
+                                                // Generate client translation task
+                                                const { generateClientRequest } = await import('../services/ai');
+                                                const clientLesson = await generateClientRequest(
+                                                    userSkills.targetLanguage || "German",
+                                                    userSkills.totalXP || 0
+                                                );
+
+                                                const lessonId = await LessonService.createLesson({
+                                                    ...clientLesson,
+                                                    createdBy: currentUser.uid,
+                                                    category: 'client-request',
+                                                    createdAt: new Date(),
+                                                    isActive: true
+                                                } as any);
+
+                                                // Reset client counter
+                                                await UserSkillsService.updateSkills(currentUser.uid, {
+                                                    lessonsSinceClientTask: 0
+                                                });
+
+                                                const lesson = await LessonService.getLessonById(lessonId);
+                                                if (lesson) handleLessonSelect(lesson);
+                                            } else {
+                                                // No projects available, skip client task and get standard lesson
+                                                const standardNext = await LessonService.getNextLesson({
+                                                    ...userSkills,
+                                                    lessonsSinceClientTask: 0 // Reset counter since we're skipping
+                                                });
+
+                                                if (standardNext && typeof standardNext !== 'string') {
+                                                    handleLessonSelect(standardNext);
+                                                }
+                                            }
+
+                                        } else if (next === null) {
+                                            // No more database lessons - fallback to AI generation
+                                            const { generatePersonalizedLesson } = await import('../services/ai');
+                                            const aiLesson = await generatePersonalizedLesson(
+                                                [],
+                                                `Level ${Math.floor(userSkills.totalXP / 100)}`,
+                                                "Advanced Practice",
+                                                userSkills.targetLanguage || "German",
+                                                userSkills.totalXP || 0
+                                            );
+
+                                            const lessonId = await LessonService.createLesson({
+                                                ...aiLesson,
+                                                createdBy: currentUser.uid,
+                                                isAiGenerated: true,
+                                                createdAt: new Date(),
+                                                isActive: true
+                                            } as any);
+
+                                            const lesson = await LessonService.getLessonById(lessonId);
+                                            if (lesson) handleLessonSelect(lesson);
+
+                                        } else {
+                                            // Standard database lesson
+                                            handleLessonSelect(next);
                                         }
+
                                     } catch (e) {
-                                        console.error(e);
+                                        console.error('Error loading next lesson:', e);
                                     } finally {
                                         setIsGenerating(false);
                                     }

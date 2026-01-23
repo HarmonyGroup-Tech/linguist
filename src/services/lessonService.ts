@@ -79,10 +79,14 @@ export interface UserSkills {
     streak: number;
     lastPracticeDate: string;
     completedLessons: string[];
-    lings: number;          // Current balance (0-5)
+    lings: number;          // Current balance (0-25)
     lastLingRefill: string; // ISO Date string
     targetLanguage: string; // The language the user is learning (e.g., German, Spanish)
-    lessonsSinceLastClient: number; // Counter for client-work triggers
+
+    // Lesson progression tracking
+    totalLessonsCompleted: number;      // Total lessons completed (for analytics)
+    lessonsSinceAiGeneration: number;   // Counter for AI trigger (0-9, resets at 10)
+    lessonsSinceClientTask: number;     // Counter for client-work triggers (0-2, resets at 3)
 }
 
 // --- Lesson Service ---
@@ -168,6 +172,52 @@ export const LessonService = {
         } catch (e) {
             console.error("Error fetching all lessons:", e);
             return [];
+        }
+    },
+
+    /**
+     * Get the next lesson for a user based on progression triggers
+     * Returns: Lesson object, 'AI_TRIGGER', 'CLIENT_TRIGGER', or null
+     */
+    async getNextLesson(userSkills: UserSkills): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
+        try {
+            // Check if it's time for AI personalization (every 10 lessons)
+            if (userSkills.lessonsSinceAiGeneration >= 10) {
+                return 'AI_TRIGGER';
+            }
+
+            // Check if it's time for client task (every 3 lessons, if eligible)
+            if (userSkills.lessonsSinceClientTask >= 3 && userSkills.totalXP >= 500) {
+                // We'll check for pending projects in the dashboard
+                // Returning the trigger here so dashboard can check availability
+                return 'CLIENT_TRIGGER';
+            }
+
+            // Otherwise, get next uncompleted admin lesson
+            const q = query(
+                collection(db, 'lessons'),
+                where('isActive', '==', true),
+                where('createdBy', '==', 'ADMIN'),
+                orderBy('order', 'asc')
+            );
+
+            const querySnapshot = await getDocs(q);
+            const adminLessons = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                type: doc.data().type || 'text-input',
+                category: doc.data().category || 'standard'
+            } as Lesson));
+
+            // Find first uncompleted lesson
+            const nextLesson = adminLessons.find(lesson =>
+                lesson.id && !userSkills.completedLessons.includes(lesson.id)
+            );
+
+            return nextLesson || null;
+        } catch (e) {
+            console.error("Error getting next lesson:", e);
+            return null;
         }
     },
 
@@ -311,7 +361,9 @@ export const UserSkillsService = {
                     lings: 25, // Start with full lings
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German", // Default for now, ideally selected at signup
-                    lessonsSinceLastClient: 0
+                    totalLessonsCompleted: 0,
+                    lessonsSinceAiGeneration: 0,
+                    lessonsSinceClientTask: 0
                 };
 
                 // Create the document
@@ -334,7 +386,9 @@ export const UserSkillsService = {
                 lings: 25,
                 lastLingRefill: new Date().toISOString(),
                 targetLanguage: "German",
-                lessonsSinceLastClient: 0
+                totalLessonsCompleted: 0,
+                lessonsSinceAiGeneration: 0,
+                lessonsSinceClientTask: 0
             };
         }
     },
@@ -390,7 +444,9 @@ export const UserSkillsService = {
                 lings: currentSkills.lings,
                 lastLingRefill: currentSkills.lastLingRefill,
                 targetLanguage: currentSkills.targetLanguage || "German",
-                lessonsSinceLastClient: (currentSkills.lessonsSinceLastClient || 0) + 1
+                totalLessonsCompleted: (currentSkills.totalLessonsCompleted || 0) + 1,
+                lessonsSinceAiGeneration: (currentSkills.lessonsSinceAiGeneration || 0) + 1,
+                lessonsSinceClientTask: (currentSkills.lessonsSinceClientTask || 0) + 1
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);
@@ -425,7 +481,9 @@ export const UserSkillsService = {
                     lings: 25,
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German",
-                    lessonsSinceLastClient: 0
+                    totalLessonsCompleted: 0,
+                    lessonsSinceAiGeneration: 0,
+                    lessonsSinceClientTask: 0
                 };
 
                 // Use setDoc for new document
@@ -433,22 +491,27 @@ export const UserSkillsService = {
             } else {
                 // Ensure existing users have new fields
                 const data = docSnap.data() as UserSkills;
+                const updates: Partial<UserSkills> = {};
+
                 if (typeof data.lings === 'undefined') {
-                    await updateDoc(userSkillsRef, {
-                        lings: 25,
-                        lastLingRefill: new Date().toISOString(),
-                        targetLanguage: data.targetLanguage || "German",
-                        lessonsSinceLastClient: data.lessonsSinceLastClient || 0
-                    } as any);
-                } else if (typeof data.targetLanguage === 'undefined') {
-                    await updateDoc(userSkillsRef, {
-                        targetLanguage: "German",
-                        lessonsSinceLastClient: 0
-                    } as any);
-                } else if (typeof data.lessonsSinceLastClient === 'undefined') {
-                    await updateDoc(userSkillsRef, {
-                        lessonsSinceLastClient: 0
-                    } as any);
+                    updates.lings = 25;
+                    updates.lastLingRefill = new Date().toISOString();
+                }
+                if (typeof data.targetLanguage === 'undefined') {
+                    updates.targetLanguage = "German";
+                }
+                if (typeof data.totalLessonsCompleted === 'undefined') {
+                    updates.totalLessonsCompleted = 0;
+                }
+                if (typeof data.lessonsSinceAiGeneration === 'undefined') {
+                    updates.lessonsSinceAiGeneration = 0;
+                }
+                if (typeof data.lessonsSinceClientTask === 'undefined') {
+                    updates.lessonsSinceClientTask = 0;
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    await updateDoc(userSkillsRef, updates as any);
                 }
             }
         } catch (e) {
