@@ -53,7 +53,7 @@ export function parseCSV(csvText: string, createdBy: string): CSVParseResult {
             });
 
             // Validate and convert types
-            const lesson: Omit<Lesson, 'id' | 'createdAt'> = {
+            const lesson: any = {
                 title: rowData.title,
                 description: rowData.description,
                 language: rowData.language,
@@ -75,10 +75,13 @@ export function parseCSV(csvText: string, createdBy: string): CSVParseResult {
                 readingGain: parseInt(rowData.readingGain),
                 writingGain: parseInt(rowData.writingGain),
                 order: parseInt(rowData.order),
-                scrambledOptions: rowData.scrambledOptions ? rowData.scrambledOptions.split('|') : undefined,
                 createdBy,
                 isActive: true
             };
+
+            if (rowData.scrambledOptions && rowData.scrambledOptions.trim() !== "") {
+                lesson.scrambledOptions = rowData.scrambledOptions.split('|');
+            }
 
             // Validate required fields
             if (!lesson.title || !lesson.language || !lesson.context || !lesson.targetSentence || !lesson.correctTranslation) {
