@@ -181,10 +181,11 @@ export const LessonService = {
      */
     async getNextLesson(userSkills: UserSkills): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
         try {
-            // Check if it's time for AI personalization (every 5 lessons)
+            /* AI Trigger Temporarily Disabled
             if (userSkills.lessonsSinceAiGeneration >= 5) {
                 return 'AI_TRIGGER';
             }
+            */
 
             // Check if it's time for client task (every 3 lessons, if eligible)
             if (userSkills.lessonsSinceClientTask >= 3 && userSkills.totalXP >= 500) {

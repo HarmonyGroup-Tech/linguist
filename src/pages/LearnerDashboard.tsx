@@ -384,27 +384,7 @@ export default function LearnerDashboard() {
                                             }
 
                                         } else if (next === null) {
-                                            // No more database lessons - fallback to AI generation
-                                            const { generatePersonalizedLesson } = await import('../services/ai');
-                                            const aiLesson = await generatePersonalizedLesson(
-                                                [],
-                                                `Level ${Math.floor(userSkills.totalXP / 100)}`,
-                                                "Advanced Practice",
-                                                userSkills.targetLanguage || "German",
-                                                userSkills.totalXP || 0
-                                            );
-
-                                            const lessonId = await LessonService.createLesson({
-                                                ...aiLesson,
-                                                createdBy: currentUser.uid,
-                                                isAiGenerated: true,
-                                                createdAt: new Date(),
-                                                isActive: true
-                                            } as any);
-
-                                            const lesson = await LessonService.getLessonById(lessonId);
-                                            if (lesson) handleLessonSelect(lesson);
-
+                                            alert("You've completed all available lessons for now! Check back later for new content.");
                                         } else {
                                             // Standard database lesson
                                             handleLessonSelect(next);
