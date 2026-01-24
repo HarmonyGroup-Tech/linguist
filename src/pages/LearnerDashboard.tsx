@@ -345,11 +345,6 @@ export default function LearnerDashboard() {
                                                 isActive: true
                                             } as any);
 
-                                            // Reset AI counter
-                                            await UserSkillsService.updateSkills(currentUser.uid, {
-                                                lessonsSinceAiGeneration: 0
-                                            });
-
                                             const lesson = await LessonService.getLessonById(lessonId);
                                             if (lesson) handleLessonSelect(lesson);
 
@@ -373,11 +368,6 @@ export default function LearnerDashboard() {
                                                     createdAt: new Date(),
                                                     isActive: true
                                                 } as any);
-
-                                                // Reset client counter
-                                                await UserSkillsService.updateSkills(currentUser.uid, {
-                                                    lessonsSinceClientTask: 0
-                                                });
 
                                                 const lesson = await LessonService.getLessonById(lessonId);
                                                 if (lesson) handleLessonSelect(lesson);

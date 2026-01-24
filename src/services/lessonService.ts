@@ -181,8 +181,8 @@ export const LessonService = {
      */
     async getNextLesson(userSkills: UserSkills): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
         try {
-            // Check if it's time for AI personalization (every 10 lessons)
-            if (userSkills.lessonsSinceAiGeneration >= 10) {
+            // Check if it's time for AI personalization (every 5 lessons)
+            if (userSkills.lessonsSinceAiGeneration >= 5) {
                 return 'AI_TRIGGER';
             }
 
@@ -445,6 +445,27 @@ export const UserSkillsService = {
                 completedLessons.push(lessonId);
             }
 
+            // Fetch lesson to check type for counter logic
+            const lesson = await LessonService.getLessonById(lessonId);
+
+            let nextAiCount = (currentSkills.lessonsSinceAiGeneration || 0);
+            let nextClientCount = (currentSkills.lessonsSinceClientTask || 0);
+
+            if (lesson) {
+                if (lesson.isAiGenerated) {
+                    nextAiCount = 0;
+                } else if (lesson.category === 'client-request') {
+                    nextClientCount = 0;
+                } else {
+                    // Manual/Standard lesson: increment both
+                    nextAiCount += 1;
+                    nextClientCount += 1;
+                }
+            } else {
+                nextAiCount += 1;
+                nextClientCount += 1;
+            }
+
             const updatedSkills: UserSkills = {
                 userId,
                 vocabulary: newVocabulary,
@@ -459,8 +480,8 @@ export const UserSkillsService = {
                 lastLingRefill: currentSkills.lastLingRefill,
                 targetLanguage: currentSkills.targetLanguage || "German",
                 totalLessonsCompleted: (currentSkills.totalLessonsCompleted || 0) + 1,
-                lessonsSinceAiGeneration: (currentSkills.lessonsSinceAiGeneration || 0) + 1,
-                lessonsSinceClientTask: (currentSkills.lessonsSinceClientTask || 0) + 1
+                lessonsSinceAiGeneration: nextAiCount,
+                lessonsSinceClientTask: nextClientCount
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);
