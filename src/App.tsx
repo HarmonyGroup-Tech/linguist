@@ -10,6 +10,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import DeleteAccount from './pages/DeleteAccount';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import MobileRedirect from './pages/MobileRedirect';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -21,6 +22,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/mobile" element={<MobileRedirect />} />
 
             {/* Protected Learner Routes */}
             <Route
