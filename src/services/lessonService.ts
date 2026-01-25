@@ -87,6 +87,7 @@ export interface UserSkills {
     totalLessonsCompleted: number;      // Total lessons completed (for analytics)
     lessonsSinceAiGeneration: number;   // Counter for AI trigger (0-9, resets at 10)
     lessonsSinceClientTask: number;     // Counter for client-work triggers (0-2, resets at 3)
+    streakHistory?: string[];           // Array of YYYY-MM-DD dates where user practiced
 }
 
 // --- Lesson Service ---
@@ -455,6 +456,12 @@ export const UserSkillsService = {
                 newStreak = 1;
             }
 
+            // Update streak history
+            const streakHistory = currentSkills.streakHistory || [];
+            if (!streakHistory.includes(today)) {
+                streakHistory.push(today);
+            }
+
             // Add lesson to completed list
             const completedLessons = [...currentSkills.completedLessons];
             if (!completedLessons.includes(lessonId)) {
@@ -497,7 +504,8 @@ export const UserSkillsService = {
                 targetLanguage: currentSkills.targetLanguage || "German",
                 totalLessonsCompleted: (currentSkills.totalLessonsCompleted || 0) + 1,
                 lessonsSinceAiGeneration: nextAiCount,
-                lessonsSinceClientTask: nextClientCount
+                lessonsSinceClientTask: nextClientCount,
+                streakHistory
             };
 
             await updateDoc(userSkillsRef, updatedSkills as any);

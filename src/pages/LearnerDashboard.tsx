@@ -16,6 +16,7 @@ import {
 import { generatePersonalizedLesson } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
+import StreakCalendar from '../components/StreakCalendar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LearnerDashboard() {
@@ -33,6 +34,7 @@ export default function LearnerDashboard() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
+    const [showCalendar, setShowCalendar] = useState(false);
 
     // Timer for ling refill
     useEffect(() => {
@@ -197,10 +199,13 @@ export default function LearnerDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-8">
-                        <div className="hidden sm:flex items-center gap-2 text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30">
+                        <button
+                            onClick={() => setShowCalendar(true)}
+                            className="hidden sm:flex items-center gap-2 text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                        >
                             <Flame className="w-5 h-5 fill-current" />
                             <span className="font-bold">{userSkills.streak}</span>
-                        </div>
+                        </button>
                         <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-yellow-100 dark:border-yellow-900/30 shadow-sm">
                             <Award className="w-4 h-4 md:w-5 md:h-5 text-yellow-600" />
                             <span className="font-bold text-sm md:text-lg">{userSkills.totalXP}</span>
@@ -414,6 +419,15 @@ export default function LearnerDashboard() {
                     </div>
                 )}
             </main>
+
+            <AnimatePresence>
+                {showCalendar && userSkills && (
+                    <StreakCalendar
+                        streakHistory={userSkills.streakHistory || []}
+                        onClose={() => setShowCalendar(false)}
+                    />
+                )}
+            </AnimatePresence>
         </div >
     );
 }

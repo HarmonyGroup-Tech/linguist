@@ -198,23 +198,23 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                             exit={{ opacity: 0, scale: 0.95 }}
                             className={`fixed bottom-0 left-0 right-0 p-8 z-50 transition-colors ${showStatus === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
                         >
-                            <div className="max-w-4xl mx-auto flex items-center justify-between text-white">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                            <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0 text-white p-4 md:p-0">
+                                <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
+                                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center shrink-0">
                                         {showStatus === 'success' ? (
-                                            <CheckCircle2 className="w-10 h-10" />
+                                            <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10" />
                                         ) : (
-                                            <X className="w-10 h-10" />
+                                            <X className="w-8 h-8 md:w-10 md:h-10" />
                                         )}
                                     </div>
                                     <div>
-                                        <h4 className="text-2xl font-black mb-1">
+                                        <h4 className="text-xl md:text-2xl font-black mb-1">
                                             {showStatus === 'success' ? 'EXCELLENT!' : 'Incorrect'}
                                         </h4>
                                         {showStatus === 'failure' && (
                                             <div className="space-y-1">
-                                                <p className="text-white/80 text-sm font-bold uppercase tracking-wider">Correct Answer:</p>
-                                                <p className="text-xl font-bold">{currentExercise.targetSentence}</p>
+                                                <p className="text-white/80 text-xs md:text-sm font-bold uppercase tracking-wider">Correct Answer:</p>
+                                                <p className="text-lg md:text-xl font-bold">{currentExercise.targetSentence}</p>
                                             </div>
                                         )}
                                     </div>
@@ -222,10 +222,10 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
 
                                 <button
                                     onClick={moveToNext}
-                                    className="px-10 py-4 bg-white text-brand-dark rounded-2xl font-black text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                                    className="w-full md:w-auto px-8 md:px-10 py-3 md:py-4 bg-white text-brand-dark rounded-xl md:rounded-2xl font-black text-lg md:text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
                                     Continue
-                                    <ArrowRight className="w-6 h-6" />
+                                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
                                 </button>
                             </div>
                         </motion.div>

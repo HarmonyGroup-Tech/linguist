@@ -33,7 +33,7 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
     const handleWordSelect = (wordObj: { id: number; word: string }) => {
         if (checkStatus === 'correct' || loading) return;
 
-        setAvailableWords(prev => prev.filter(w => w.id !== wordObj.id));
+        // Don't remove from availableWords, just add to selectedWords
         setSelectedWords(prev => [...prev, wordObj]);
         setCheckStatus('idle');
     };
@@ -42,7 +42,6 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
         if (checkStatus === 'correct' || loading) return;
 
         setSelectedWords(prev => prev.filter(w => w.id !== wordObj.id));
-        setAvailableWords(prev => [...prev, wordObj]);
         setCheckStatus('idle');
     };
 
@@ -144,16 +143,27 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
             {/* Word Bank */}
             <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-8 md:mb-12">
                 <AnimatePresence>
-                    {availableWords.map((word) => (
-                        <motion.button
-                            key={word.id}
-                            layoutId={`word-${word.id}`}
-                            onClick={() => handleWordSelect(word)}
-                            className="px-3 md:px-5 py-2.5 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-[0_2px_0_0_rgba(229,231,235,1)] dark:shadow-[0_2px_0_0_rgba(31,41,55,1)] rounded-xl md:rounded-2xl font-bold text-brand-dark dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 active:translate-y-[2px] active:shadow-none transition-all text-base md:text-lg"
-                        >
-                            {word.word}
-                        </motion.button>
-                    ))}
+                    {availableWords.map((word) => {
+                        const isSelected = selectedWords.some(w => w.id === word.id);
+                        return (
+                            <motion.button
+                                key={word.id}
+                                layoutId={`word-${word.id}`}
+                                onClick={() => !isSelected && handleWordSelect(word)}
+                                disabled={isSelected}
+                                transition={{ duration: 0.15 }}
+                                className={`
+                                    px-3 md:px-5 py-2.5 md:py-4 border-2 rounded-xl md:rounded-2xl font-bold text-base md:text-lg transition-all
+                                    ${isSelected
+                                        ? 'bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-800 text-transparent select-none'
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-[0_2px_0_0_rgba(229,231,235,1)] dark:shadow-[0_2px_0_0_rgba(31,41,55,1)] text-brand-dark dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 active:translate-y-[2px] active:shadow-none'
+                                    }
+                                `}
+                            >
+                                {word.word}
+                            </motion.button>
+                        );
+                    })}
                 </AnimatePresence>
             </div>
 
