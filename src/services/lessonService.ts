@@ -195,22 +195,19 @@ export const LessonService = {
             }
 
             // Otherwise, get next uncompleted platform lesson for the user's language
-            // Ensure language is formatted consistently (e.g., "German")
-            const targetLang = userSkills.targetLanguage || 'German';
-            const formattedLang = targetLang.charAt(0).toUpperCase() + targetLang.slice(1).toLowerCase();
+            // Robust language matching (case-insensitive, trimmed)
+            const targetLang = (userSkills.targetLanguage || 'German').trim().toLowerCase();
 
-            // We fetch all active lessons for this language
+            // We fetch all active lessons
             const q = query(
                 collection(db, 'lessons'),
-                where('isActive', '==', true),
-                where('language', '==', formattedLang),
-                orderBy('order', 'asc')
+                where('isActive', '==', true)
             );
 
             const querySnapshot = await getDocs(q);
 
-            // Filter to find platform lessons (not AI, not client tasks)
-            // We prioritize lessons created by the user (uploads) or literal ADMIN
+            // Filter to find platform lessons for the target language
+            // We include anything that isn't AI-personalized for someone else
             const platformLessons = querySnapshot.docs
                 .map(doc => ({
                     id: doc.id,
@@ -218,11 +215,17 @@ export const LessonService = {
                     type: doc.data().type || 'text-input',
                     category: doc.data().category || 'standard'
                 } as Lesson))
-                .filter(lesson =>
-                    !lesson.isAiGenerated &&
-                    lesson.category !== 'client-request' &&
-                    (lesson.createdBy === 'ADMIN' || lesson.createdBy === userSkills.userId)
-                );
+                .filter(lesson => {
+                    const lessonLang = (lesson.language || '').trim().toLowerCase();
+                    const isCorrectLang = lessonLang === targetLang;
+
+                    // A lesson is a "Platform Lesson" if it's not AI generated 
+                    // and not a client request.
+                    return isCorrectLang &&
+                        !lesson.isAiGenerated &&
+                        lesson.category !== 'client-request';
+                })
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
 
             // Find first uncompleted lesson
             const nextLesson = platformLessons.find(lesson =>
@@ -258,13 +261,26 @@ export const LessonService = {
                 } as Lesson;
             });
 
+            // Robust language matching
+            const targetLang = (userSkills.targetLanguage || 'German').trim().toLowerCase();
+
             // Filter for user-specific lessons: 
-            // 1. Lessons created by 'ADMIN' (global)
-            // 2. Lessons created by the specific user (AI-generated for them)
-            const filteredLessons = allLessons.filter(lesson =>
-                lesson.createdBy === 'ADMIN' ||
-                lesson.createdBy === userSkills.userId
-            );
+            // 1. Platform lessons (non-AI, non-client) for the target language
+            // 2. Lessons specifically generated for this user
+            const filteredLessons = allLessons.filter(lesson => {
+                const lessonLang = (lesson.language || '').trim().toLowerCase();
+                const isCorrectLang = lessonLang === targetLang;
+
+                if (!isCorrectLang) return false;
+
+                // Include if it's a platform lesson (non-AI, non-client)
+                const isPlatform = !lesson.isAiGenerated && lesson.category !== 'client-request';
+
+                // OR if it's specifically for this user
+                const isForUser = lesson.createdBy === userSkills.userId;
+
+                return isPlatform || isForUser;
+            });
 
             // Sort by AI priority first, then order
             filteredLessons.sort((a, b) => {
@@ -362,7 +378,6 @@ export const UserSkillsService = {
                 return await this.ensureLings(data);
             } else {
                 // Initialize new user with default skills
-                // Initialize new user with default skills
                 const defaultSkills: UserSkills = {
                     userId,
                     vocabulary: 0,
@@ -375,14 +390,14 @@ export const UserSkillsService = {
                     completedLessons: [],
                     lings: 25, // Start with full lings
                     lastLingRefill: new Date().toISOString(),
-                    targetLanguage: "German", // Default for now, ideally selected at signup
+                    targetLanguage: "German", // Default for now
                     totalLessonsCompleted: 0,
                     lessonsSinceAiGeneration: 0,
                     lessonsSinceClientTask: 0
                 };
 
                 // Create the document
-                await updateDoc(docRef, defaultSkills as any);
+                await setDoc(docRef, defaultSkills);
                 return defaultSkills;
             }
         } catch (e) {
@@ -559,7 +574,6 @@ export const UserSkillsService = {
      * Check and refill Lings based on time passed
      */
     async ensureLings(skills: UserSkills): Promise<UserSkills> {
-        // If already full, just update timestamp to now (or keep old? Keep old to accumulate time? 
         // Logic: 1 ling every 4 hours.
         if (skills.lings >= 25) return skills;
 
@@ -572,16 +586,9 @@ export const UserSkillsService = {
             const lingsToAdd = Math.floor(diffHours / 4);
             const newLings = Math.min(25, (skills.lings || 0) + lingsToAdd);
 
-            // Only update if we actually added lings
             if (newLings > skills.lings) {
-                // We shouldn't just reset lastRefill to now, we should advance it by the amount of time consumed
-                // to keep the "partial" progress.
-                // New time = Old time + (lingsToAdd * 4 hours)
                 const timeAddedMs = lingsToAdd * 4 * 60 * 60 * 1000;
                 const newRefillTime = new Date(lastRefill.getTime() + timeAddedMs).toISOString();
-
-                // If we hit max, validation might be tricky with "partial" time. 
-                // Simpler approach: If maxed out, set time to now.
                 const finalRefillTime = newLings === 25 ? now.toISOString() : newRefillTime;
 
                 const userSkillsRef = doc(db, 'userSkills', skills.userId);
