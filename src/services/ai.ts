@@ -417,3 +417,41 @@ Rules:
     }
 }
 
+/**
+ * Checks if a user's translation is semantically correct compared to the original.
+ */
+export async function evaluateTranslation(original: string, userTranslation: string, sourceLang: string): Promise<{ isCorrect: boolean, feedback?: string }> {
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a translation validator.
+                        
+Task: Check if the user's translation of the text from ${sourceLang} to English is semantically correct.
+
+Original (${sourceLang}): "${original}"
+User's Translation: "${userTranslation}"
+
+Rules:
+1. It is okay if the user uses synonyms or slightly different phrasing as long as the meaning is identical.
+2. Return a JSON object: { "isCorrect": boolean, "feedback": "brief explanation if wrong" }
+3. Return ONLY the JSON object.`
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) return { isCorrect: true };
+        const data = await response.json();
+        const result = JSON.parse(data.choices[0].message.content.trim());
+        return result;
+    } catch (e) {
+        console.error("Error evaluating translation:", e);
+        return { isCorrect: true };
+    }
+}
+

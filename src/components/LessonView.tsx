@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, RefreshCw, Send, Sparkles, CheckCircle2, X, ArrowRight } from 'lucide-react';
-
 import { Lesson, Exercise } from '../services/lessonService';
 import DragDropView from './DragDropView';
+import { evaluateTranslation } from '../services/ai';
 
 interface LessonViewProps {
     lesson: Lesson;
@@ -16,6 +16,8 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [showStatus, setShowStatus] = useState<'success' | 'failure' | 'none'>('none');
+    const [aiFeedback, setAiFeedback] = useState('');
+    const [isValidating, setIsValidating] = useState(false);
     const [failedExercises, setFailedExercises] = useState<Exercise[]>([]);
     const [lessonFinished, setLessonFinished] = useState(false);
 
@@ -45,19 +47,42 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         setInput('');
     }, [currentExerciseIndex, lesson.id]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || loading || isValidating) return;
 
-        const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
-        // Check against targetSentence (The language being learned)
-        const isCorrect = normalize(input) === normalize(currentExercise.targetSentence);
+        let isCorrect = false;
+        let feedback = "";
 
-        handleStepComplete(input, isCorrect);
+        if (lesson.category === 'client-request') {
+            setIsValidating(true);
+            try {
+                const result = await evaluateTranslation(
+                    currentExercise.correctTranslation, // The original foreign text
+                    input,
+                    lesson.language
+                );
+                isCorrect = result.isCorrect;
+                feedback = result.feedback || "";
+            } catch (e) {
+                console.error("AI Validation failed:", e);
+                // Fallback to strict check if AI fails
+                const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+                isCorrect = normalize(input) === normalize(currentExercise.targetSentence);
+            } finally {
+                setIsValidating(false);
+            }
+        } else {
+            const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+            isCorrect = normalize(input) === normalize(currentExercise.targetSentence);
+        }
+
+        handleStepComplete(input, isCorrect, feedback);
     };
 
-    const handleStepComplete = (answer: string, isCorrect: boolean) => {
+    const handleStepComplete = (answer: string, isCorrect: boolean, feedback: string = "") => {
         setSubmitted(true);
+        setAiFeedback(feedback);
 
         if (isCorrect) {
             setShowStatus('success');
@@ -173,11 +198,17 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                                     {!submitted && (
                                                         <button
                                                             type="submit"
-                                                            disabled={!input.trim() || loading}
+                                                            disabled={!input.trim() || loading || isValidating}
                                                             className="w-full py-4 md:py-6 bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-lg hover:bg-gray-800 dark:hover:bg-yellow-400 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-2 md:gap-3 group"
                                                         >
-                                                            Check Answer
-                                                            <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
+                                                            {isValidating ? (
+                                                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                                            ) : (
+                                                                <>
+                                                                    Check Answer
+                                                                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
+                                                                </>
+                                                            )}
                                                         </button>
                                                     )}
                                                 </div>
@@ -214,8 +245,12 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                                         </h4>
                                         {showStatus === 'failure' && (
                                             <div className="space-y-1">
-                                                <p className="text-white/80 text-xs md:text-sm font-bold uppercase tracking-wider">Correct Answer:</p>
-                                                <p className="text-lg md:text-xl font-bold">{currentExercise.targetSentence}</p>
+                                                <p className="text-white/80 text-xs md:text-sm font-bold uppercase tracking-wider">
+                                                    {aiFeedback ? 'Feedback:' : 'Correct Answer:'}
+                                                </p>
+                                                <p className="text-lg md:text-xl font-bold">
+                                                    {aiFeedback || currentExercise.targetSentence}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
