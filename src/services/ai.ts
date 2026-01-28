@@ -72,11 +72,11 @@ JSON Structure:
 
         return {
             ...lessonData,
-            type: lessonData.exercises[0].type, // Backward compatibility
-            context: lessonData.exercises[0].context,
-            targetSentence: lessonData.exercises[0].targetSentence,
-            correctTranslation: lessonData.exercises[0].correctTranslation,
-            scrambledOptions: lessonData.exercises[0].scrambledOptions
+            type: lessonData.exercises[0].type || 'text-input', // Backward compatibility
+            context: lessonData.exercises[0].context || "",
+            targetSentence: lessonData.exercises[0].targetSentence || "",
+            correctTranslation: lessonData.exercises[0].correctTranslation || "",
+            scrambledOptions: lessonData.exercises[0].scrambledOptions || []
         };
     } catch (error) {
         console.error("AI Generation failed:", error);
@@ -134,6 +134,7 @@ export async function generateClientRequest(language: string = "German", userXP:
 
         return {
             ...clientData,
+            context: clientData.context || "",
             type: 'text-input',
             category: 'client-request',
             level: 5,
@@ -227,16 +228,23 @@ export async function generatePersonalizedLesson(
 
         const lessonData = JSON.parse(content);
 
+        // Ensure all exercises have context
+        const exercises = (lessonData.exercises || []).map((ex: any) => ({
+            ...ex,
+            context: ex.context || ""
+        }));
+
         // Add default fields for backward compat and metadata
-        const firstEx = lessonData.exercises[0];
+        const firstEx = exercises[0] || { type: 'text-input', context: "", targetSentence: "", correctTranslation: "" };
 
         return {
             ...lessonData,
+            exercises,
             type: firstEx.type,
             context: firstEx.context,
             targetSentence: firstEx.targetSentence,
             correctTranslation: firstEx.correctTranslation,
-            scrambledOptions: firstEx.scrambledOptions,
+            scrambledOptions: firstEx.scrambledOptions || [],
             language,
             level: 1,
             category: 'standard',

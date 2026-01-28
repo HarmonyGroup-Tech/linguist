@@ -68,8 +68,9 @@ export default function DragDropView({ lesson, onComplete, loading }: DragDropVi
     const splitContext = () => {
         // Simple split logic to show context around the target sentence
         // This relies on the targetSentence being EXACTLY in the context
-        const parts = lesson.context.split(lesson.targetSentence);
-        if (parts.length === 1) return [lesson.context, '', '']; // Fallback
+        const context = lesson.context || "";
+        const parts = context.split(lesson.targetSentence);
+        if (parts.length === 1) return [context, '', '']; // Fallback
         return [parts[0], lesson.targetSentence, parts[1]];
     };
 
