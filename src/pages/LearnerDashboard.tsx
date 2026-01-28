@@ -211,7 +211,7 @@ export default function LearnerDashboard() {
                     );
                     const historyText = recentLessons
                         .filter(l => !!l)
-                        .map(l => `${l?.title}: ${l?.description}`)
+                        .map(l => `Lesson: ${l?.title} - Content: "${l?.targetSentence}"`)
                         .join(", ");
 
                     // 2. Iterate through projects and segments to find a match

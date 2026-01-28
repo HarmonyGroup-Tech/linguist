@@ -395,25 +395,26 @@ export async function checkCapability(segmentText: string, userHistory: string):
                         "content": `You are a linguistic evaluator.
                         
 Task: Decide if a language learner can handle a specific translation task.
-User's Recent Lessons: ${userHistory}
-Target Segment: "${segmentText}"
+User's Recent Lessons (Sentences handled): ${userHistory}
+Target Segment to Translate: "${segmentText}"
 
 Rules:
-1. If the segment contains complex grammar or vocabulary NOT covered or related to the lessons, return FALSE.
-2. If the segment is simple or the user has learned similar structures, return TRUE.
-3. Return ONLY "TRUE" or "FALSE". No explanation.`
+1. Be EXTREMELY CONSERVATIVE.
+2. If the target segment contains ANY vocabulary, grammatical structures, or complexity not explicitly present or very similar to the user history, return "FALSE".
+3. If the user successfully handled similar structures and words, return "TRUE".
+4. Return ONLY "TRUE" or "FALSE". No explanation.`
                     }
                 ]
             })
         });
 
-        if (!response.ok) return true; // Default to true if AI fails
+        if (!response.ok) return false; // Default to false (safe) if AI fails
         const data = await response.json();
         const content = data.choices[0].message.content.trim().toUpperCase();
         return content.includes("TRUE");
     } catch (e) {
         console.error("Error checking capability:", e);
-        return true;
+        return false; // Default to false (safe)
     }
 }
 
