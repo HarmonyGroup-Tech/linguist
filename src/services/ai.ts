@@ -257,3 +257,83 @@ export async function generatePersonalizedLesson(
     }
 }
 
+
+/**
+ * Splits a long text into learner-friendly segments using AI.
+ */
+export async function splitText(text: string): Promise<string[]> {
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a linguistic expert helper.
+                        
+CRITICAL Task: Split the user's text into small, standalone segments suitable for translation exercises.
+Rules:
+1. Each segment should be 1-2 sentences max.
+2. Keep segments logically complete (don't split a clause in a weird place).
+3. Return ONLY a JSON array of strings.
+4. Do not include any markdown or "Here is the list". just the raw JSON.
+5. Example: ["Sentence 1.", "Sentence 2."]
+`
+                    },
+                    {
+                        "role": "user",
+                        "content": text
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) throw new Error("AI Split failed");
+        const data = await response.json();
+        let content = data.choices[0].message.content;
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        return JSON.parse(content);
+    } catch (e) {
+        console.error("Error splitting text:", e);
+        // Fallback: simple sentence splitting if AI fails
+        return text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+    }
+}
+
+/**
+ * Reassembles translated segments into a cohesive text.
+ */
+export async function reassembleText(segments: string[]): Promise<string> {
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a professional editor.
+                        
+Task: Take the provided list of translated segments and combine them into a single, flowing text.
+Rules:
+1. Smooth out any disjointed transitions caused by segmentation.
+2. Maintain the original meaning perfectly.
+3. Return ONLY the final text string. No quotes, no markdown.`
+                    },
+                    {
+                        "role": "user",
+                        "content": JSON.stringify(segments)
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) throw new Error("AI Reassemble failed");
+        const data = await response.json();
+        return data.choices[0].message.content.trim();
+    } catch (e) {
+        console.error("Error reassembling text:", e);
+        return segments.join(" ");
+    }
+}

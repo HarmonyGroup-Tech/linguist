@@ -13,12 +13,23 @@ import {
 } from 'firebase/firestore';
 
 // --- Types ---
+export interface TranslationSegment {
+    id: string;
+    original: string;
+    translated: string;
+    status: 'pending' | 'draft' | 'approved';
+}
+
 export interface Project {
     id?: string;
     title: string;
     author: string;
     ownerId: string;
-    content: string; // Full text or link to storage
+    content: string; // Used for display or fast access
+    originalContent?: string; // Storing the full original text if needed separately
+    sourceLanguage?: string;
+    targetLanguage?: string;
+    segments?: TranslationSegment[];
     status: 'Draft' | 'Translating' | 'Review' | 'Completed';
     progress: number;
     createdAt: Date;

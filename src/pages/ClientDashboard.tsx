@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { ProjectService } from '../services/db';
+import { ProjectService, type Project } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, FileText, Feather, LayoutGrid, Settings } from 'lucide-react';
+import { LogOut, Plus, Upload, Check, FileText, Feather, LayoutGrid, Settings } from 'lucide-react';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import { motion } from 'framer-motion';
+import { splitText } from '../services/ai';
 
 export default function ClientDashboard() {
-    const { logout, currentUser } = useAuth();
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
+    const [projects, setProjects] = useState<Project[]>([]);
     const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
-    const [projects, setProjects] = useState<any[]>([]);
+    const [fileContent, setFileContent] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
@@ -149,21 +152,56 @@ export default function ClientDashboard() {
                         <h2 className="text-2xl font-bold mb-8 text-brand-dark">Upload New Work</h2>
                         <form className="space-y-6" onSubmit={async (e) => {
                             e.preventDefault();
+                            if (!currentUser) return;
+
                             const form = e.target as HTMLFormElement;
                             const title = (form.elements.namedItem('title') as HTMLInputElement).value;
                             const author = (form.elements.namedItem('author') as HTMLInputElement).value;
+                            const sourceLang = (form.elements.namedItem('sourceLang') as HTMLSelectElement).value;
 
-                            if (currentUser && title && author) {
+                            if (!title || !author || !sourceLang) {
+                                alert("Please fill in all fields.");
+                                return;
+                            }
+
+                            if (!fileContent) {
+                                alert("Please upload a text file.");
+                                return;
+                            }
+
+                            setIsProcessing(true);
+                            try {
+                                // 1. AI Split
+                                const segmentsRaw = await splitText(fileContent);
+                                const segments = segmentsRaw.map(s => ({
+                                    id: crypto.randomUUID(),
+                                    original: s,
+                                    translated: "",
+                                    status: 'pending' as const
+                                }));
+
+                                // 2. Create Project
                                 await ProjectService.addProject({
                                     title, author,
                                     ownerId: currentUser.uid,
-                                    content: "Placeholder content",
+                                    content: fileContent.substring(0, 200) + "...", // Preview
+                                    originalContent: fileContent,
+                                    sourceLanguage: sourceLang,
+                                    targetLanguage: "English",
+                                    segments,
                                     status: 'Draft',
                                     progress: 0
                                 });
+
                                 setActiveTab('projects');
                                 refreshProjects();
                                 form.reset();
+                                setFileContent(null);
+                            } catch (error) {
+                                console.error("Upload failed", error);
+                                alert("Failed to process file. Please try again.");
+                            } finally {
+                                setIsProcessing(false);
                             }
                         }}>
                             <div className="grid grid-cols-2 gap-6">
@@ -178,17 +216,78 @@ export default function ClientDashboard() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Source Text</label>
-                                <div className="border-3 border-dashed border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-dark/20 transition-all cursor-pointer group">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-brand-dark transition-colors" />
+                                <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Source Language</label>
+                                <div className="relative">
+                                    <select name="sourceLang" required className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-dark focus:border-transparent appearance-none font-medium cursor-pointer">
+                                        <option value="" disabled selected>Select Language</option>
+                                        <option value="German">German</option>
+                                        <option value="French">French</option>
+                                        <option value="Spanish">Spanish</option>
+                                        <option value="Italian">Italian</option>
+                                        <option value="Portuguese">Portuguese</option>
+                                        <option value="Russian">Russian</option>
+                                        <option value="Japanese">Japanese</option>
+                                        <option value="Chinese">Chinese</option>
+                                    </select>
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                        <Feather className="w-5 h-5" />
                                     </div>
-                                    <p className="font-medium group-hover:text-brand-dark transition-colors">Drag and drop text file or click to browse</p>
                                 </div>
                             </div>
 
-                            <button className="w-full py-4 bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:bg-black transition-colors hover:shadow-xl transform hover:-translate-y-0.5 mt-4">
-                                Start Translation Project
+                            <div>
+                                <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Source Text (.txt)</label>
+                                <div
+                                    className={`border-3 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${fileContent ? 'border-brand-yellow bg-brand-yellow/5' : 'border-gray-200 hover:bg-gray-50 hover:border-brand-dark/20'}`}
+                                    onClick={() => document.getElementById('file-upload')?.click()}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        const file = e.dataTransfer.files[0];
+                                        if (file && file.type === "text/plain") {
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => setFileContent(ev.target?.result as string);
+                                            reader.readAsText(file);
+                                        } else {
+                                            alert("Please upload a .txt file");
+                                        }
+                                    }}
+                                >
+                                    <input
+                                        type="file"
+                                        id="file-upload"
+                                        accept=".txt"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => setFileContent(ev.target?.result as string);
+                                                reader.readAsText(file);
+                                            }
+                                        }}
+                                    />
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform ${fileContent ? 'bg-brand-yellow text-brand-dark' : 'bg-gray-50 text-gray-400 group-hover:scale-110'}`}>
+                                        {fileContent ? <Check className="w-8 h-8" /> : <Upload className="w-8 h-8 group-hover:text-brand-dark" />}
+                                    </div>
+                                    <p className={`font-medium transition-colors ${fileContent ? 'text-brand-dark' : 'text-gray-400 group-hover:text-brand-dark'}`}>
+                                        {fileContent ? 'File ready to process' : 'Drag and drop text file or click to browse'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                disabled={isProcessing}
+                                className={`w-full py-4 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 mt-4 flex items-center justify-center gap-3 ${isProcessing ? 'bg-gray-100 text-gray-400 shadow-none cursor-wait' : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl'}`}
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-gray-400 border-t-brand-dark rounded-full animate-spin" />
+                                        Processing Text with AI...
+                                    </>
+                                ) : (
+                                    'Start Translation Project'
+                                )}
                             </button>
                         </form>
                     </div>
