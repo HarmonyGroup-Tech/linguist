@@ -33,6 +33,7 @@ export interface Project {
     segments?: TranslationSegment[];
     status: 'Draft' | 'Translating' | 'Review' | 'Completed';
     progress: number;
+    finalTranslation?: string;
     createdAt: Date;
 }
 
@@ -125,6 +126,18 @@ export const ProjectService = {
             } as any);
         } catch (e) {
             console.error("Error submitting translation:", e);
+            throw e;
+        }
+    },
+
+    async updateFinalTranslation(projectId: string, content: string): Promise<void> {
+        try {
+            const docRef = doc(db, 'projects', projectId);
+            await updateDoc(docRef, {
+                finalTranslation: content
+            });
+        } catch (e) {
+            console.error("Error updating final translation:", e);
             throw e;
         }
     },

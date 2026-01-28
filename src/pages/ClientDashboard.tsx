@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { ProjectService, type Project } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, Upload, Check, FileText, Feather, LayoutGrid, Settings } from 'lucide-react';
+import { LogOut, Plus, Upload, Check, FileText, Feather, LayoutGrid, Settings, ArrowLeft, ChevronRight, Zap, Languages } from 'lucide-react';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
-import { motion } from 'framer-motion';
-import { splitText } from '../services/ai';
+import { motion, AnimatePresence } from 'framer-motion';
+import { splitText, reassembleText } from '../services/ai';
 
 export default function ClientDashboard() {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isReassembling, setIsReassembling] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
@@ -141,11 +143,150 @@ export default function ClientDashboard() {
                                     <div className={`px-4 py-2 rounded-xl text-xs font-bold border ${project.status === 'Review' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                         {project.status}
                                     </div>
+
+                                    <button
+                                        onClick={() => setSelectedProject(project)}
+                                        className="flex items-center gap-2 text-sm font-bold text-brand-dark hover:translate-x-1 transition-transform group"
+                                    >
+                                        Review
+                                        <ChevronRight className="w-5 h-5 text-brand-yellow" />
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
+
+                {/* Project Detail View Overlay */}
+                <AnimatePresence>
+                    {selectedProject && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="fixed inset-0 z-50 bg-brand-gray overflow-y-auto"
+                        >
+                            <div className="max-w-7xl mx-auto px-6 py-12">
+                                <button
+                                    onClick={() => setSelectedProject(null)}
+                                    className="flex items-center gap-2 text-gray-500 hover:text-brand-dark font-bold mb-8 transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                    Back to Projects
+                                </button>
+
+                                <div className="grid lg:grid-cols-3 gap-8">
+                                    {/* Left Panel: Segments */}
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div>
+                                                    <h2 className="text-3xl font-bold text-brand-dark">{selectedProject.title}</h2>
+                                                    <p className="text-gray-400 font-medium">Project ID: {selectedProject.id}</p>
+                                                </div>
+                                                <div className="px-4 py-2 bg-brand-yellow/10 text-brand-dark rounded-xl text-xs font-black border border-brand-yellow/20">
+                                                    {selectedProject.status}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4 px-4 py-2 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-4">
+                                                    <div>Source Text ({selectedProject.sourceLanguage})</div>
+                                                    <div>Translation (English)</div>
+                                                </div>
+                                                {(selectedProject.segments || []).map((s, idx) => (
+                                                    <div key={idx} className="grid grid-cols-2 gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                                                        <div className="text-sm text-brand-dark/80 font-medium leading-relaxed">
+                                                            {s.original}
+                                                        </div>
+                                                        <div className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50">
+                                                            {s.translated || <span className="text-gray-300 italic">Pending...</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Panel: AI Reassembly */}
+                                    <div className="space-y-6">
+                                        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl shadow-gray-200/50 sticky top-24">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="w-10 h-10 bg-brand-dark rounded-xl flex items-center justify-center">
+                                                    <Zap className="w-6 h-6 text-brand-yellow" />
+                                                </div>
+                                                <h3 className="font-black text-xl text-brand-dark">AI Reassembly</h3>
+                                            </div>
+
+                                            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                                                Combine multiple user translations into a single, cohesive document polished by AI.
+                                            </p>
+
+                                            <div className="bg-gray-50 rounded-2xl p-6 mb-6 border border-gray-100 min-h-[200px]">
+                                                {selectedProject.finalTranslation ? (
+                                                    <p className="text-sm text-brand-dark leading-relaxed whitespace-pre-wrap">
+                                                        {selectedProject.finalTranslation}
+                                                    </p>
+                                                ) : (
+                                                    <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-4">
+                                                        <Languages className="w-12 h-12 opacity-20" />
+                                                        <p className="text-xs font-bold uppercase tracking-widest">No Polished Version Yet</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                disabled={isReassembling || selectedProject.progress < 100}
+                                                onClick={async () => {
+                                                    if (!selectedProject.id || !selectedProject.segments) return;
+                                                    setIsReassembling(true);
+                                                    try {
+                                                        const translatedSegments = selectedProject.segments
+                                                            .map(s => s.translated)
+                                                            .filter(t => !!t);
+
+                                                        const cohesive = await reassembleText(translatedSegments);
+                                                        await ProjectService.updateFinalTranslation(selectedProject.id, cohesive);
+
+                                                        // Update local state
+                                                        setSelectedProject({
+                                                            ...selectedProject,
+                                                            finalTranslation: cohesive
+                                                        });
+                                                        refreshProjects();
+                                                    } catch (e) {
+                                                        alert("Failed to reassemble text. Try again.");
+                                                    } finally {
+                                                        setIsReassembling(false);
+                                                    }
+                                                }}
+                                                className={`w-full py-4 rounded-xl font-black transition-all flex items-center justify-center gap-3 ${isReassembling || selectedProject.progress < 100
+                                                        ? 'bg-gray-100 text-gray-400'
+                                                        : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl hover:-translate-y-0.5'
+                                                    }`}
+                                            >
+                                                {isReassembling ? (
+                                                    <div className="w-5 h-5 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Zap className="w-5 h-5 fill-current" />
+                                                        Assemble Polished Text
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {selectedProject.progress < 100 && (
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-4 text-center tracking-tighter">
+                                                    Polishing available at 100% completion
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {activeTab === 'upload' && (
                     <div className="max-w-2xl mx-auto bg-white border border-gray-100 rounded-[2.5rem] p-10 shadow-xl shadow-gray-200/50">
