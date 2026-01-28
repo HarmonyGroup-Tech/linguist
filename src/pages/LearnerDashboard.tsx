@@ -13,7 +13,8 @@ import {
     LessonService,
     UserSkillsService
 } from '../services/lessonService';
-import { ProjectService, Project } from '../services/db';
+import { ProjectService, Project, db } from '../services/db';
+import { updateDoc, doc } from 'firebase/firestore';
 import { generatePersonalizedLesson, translateForValidation } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
@@ -142,6 +143,14 @@ export default function LearnerDashboard() {
                 updatedSkills.lings = Math.max(0, updatedSkills.lings - 1);
             }
 
+            // Award 1 Ling for completing client work
+            if (currentLesson.category === 'client-request') {
+                const userRef = doc(db, 'userSkills', currentUser.uid);
+                const newLings = Math.min(25, (updatedSkills.lings || 0) + 1);
+                await updateDoc(userRef, { lings: newLings } as any);
+                updatedSkills.lings = newLings;
+            }
+
             // If this was a client project task, update the project in Firestore
             if (currentLesson.category === 'client-request' && currentLesson.projectId && currentLesson.segmentId) {
                 await ProjectService.submitTranslation(
@@ -179,6 +188,75 @@ export default function LearnerDashboard() {
     const handleLogout = async () => {
         await logout();
         navigate('/');
+    };
+
+    const handleNextStep = async (mode: 'advance' | 'practice') => {
+        if (!currentUser || !userSkills) return;
+
+        setIsGenerating(true);
+        try {
+            const next = await LessonService.getNextLesson(userSkills, mode);
+            console.log('[Dashboard] Next Step Decision:', next);
+
+            if (next === 'CLIENT_TRIGGER') {
+                // Check if we actually have pending projects
+                const pendingProjects = await ProjectService.getPendingProjects();
+
+                if (pendingProjects.length > 0) {
+                    // 1. Pick a random project and a random pending segment
+                    const project = pendingProjects[Math.floor(Math.random() * pendingProjects.length)];
+                    // Only pick segments that are pending
+                    const segment = project.segments?.find(s => s.status === 'pending');
+
+                    if (segment) {
+                        // 2. Create a temporary lesson from this segment
+                        const referenceTranslation = await translateForValidation(
+                            segment.original,
+                            project.sourceLanguage || "German"
+                        );
+
+                        const lessonId = await LessonService.createLesson({
+                            title: `Client Task: ${project.title}`,
+                            description: `High Priority translation from ${project.author}`,
+                            language: project.sourceLanguage || "German",
+                            level: 5,
+                            type: 'text-input',
+                            category: 'client-request',
+                            context: `Original text: "${segment.original}"`,
+                            targetSentence: referenceTranslation,
+                            correctTranslation: segment.original,
+                            xpReward: 100,
+                            vocabularyGain: 5,
+                            grammarGain: 5,
+                            readingGain: 5,
+                            writingGain: 5,
+                            createdBy: currentUser.uid,
+                            isActive: true,
+                            order: 999,
+                            projectId: project.id,
+                            segmentId: segment.id
+                        } as any);
+
+                        const lesson = await LessonService.getLessonById(lessonId);
+                        if (lesson) handleLessonSelect(lesson);
+                    } else {
+                        alert("No practice sessions available right now. Try the path!");
+                    }
+                } else {
+                    alert("No client projects available right now. Try the path!");
+                }
+            } else if (next === null) {
+                alert("You've completed all available lessons for now! Check back later for new content.");
+            } else if (typeof next !== 'string') {
+                // Standard database lesson
+                handleLessonSelect(next);
+            }
+
+        } catch (e) {
+            console.error('Error loading next lesson:', e);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     if (loading || !userSkills) {
@@ -319,117 +397,51 @@ export default function LearnerDashboard() {
                 ) : (
                     <div className="max-w-4xl mx-auto">
                         {/* Hero Section / Next Lesson Button */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100 dark:border-gray-700 mb-8 md:mb-12 text-center"
-                        >
-                            <div className="w-16 h-16 md:w-20 md:h-20 bg-brand-yellow rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg shadow-brand-yellow/30">
-                                <Feather className="w-8 h-8 md:w-10 md:h-10 text-brand-dark" strokeWidth={2.5} />
-                            </div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-brand-dark dark:text-white mb-2 md:mb-3 leading-tight">Ready for your next step?</h2>
-                            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-6 md:mb-8 max-w-md mx-auto">
-                                The AI has analyzed your progress and prepared a fresh lesson in {userSkills.targetLanguage || 'German'} just for you.
-                            </p>
-
-                            <button
-                                onClick={async () => {
-                                    if (!currentUser || !userSkills) return;
-
-                                    setIsGenerating(true);
-                                    try {
-                                        const next = await LessonService.getNextLesson(userSkills);
-                                        console.log('[Dashboard] Next Step Decision:', next);
-
-                                        if (next === 'AI_TRIGGER') {
-                                            // AI Personalized lessons are disabled per user request
-                                            console.log('AI Personalization skipped');
-                                            const standardNext = await LessonService.getNextLesson({
-                                                ...userSkills,
-                                                lessonsSinceAiGeneration: 0
-                                            });
-                                            if (standardNext && typeof standardNext !== 'string') {
-                                                handleLessonSelect(standardNext);
-                                            }
-                                        } else if (next === 'CLIENT_TRIGGER') {
-                                            // Check if we actually have pending projects
-                                            const pendingProjects = await ProjectService.getPendingProjects();
-
-                                            if (pendingProjects.length > 0) {
-                                                // 1. Pick a random project and a random pending segment
-                                                const project = pendingProjects[Math.floor(Math.random() * pendingProjects.length)];
-                                                // Only pick segments that are pending
-                                                const segment = project.segments?.find(s => s.status === 'pending');
-
-                                                if (segment) {
-                                                    // 2. Create a temporary lesson from this segment
-                                                    // We use AI briefly just to get a "correctTranslation" for validation in LessonView
-                                                    const referenceTranslation = await translateForValidation(
-                                                        segment.original,
-                                                        project.sourceLanguage || "German"
-                                                    );
-
-                                                    const lessonId = await LessonService.createLesson({
-                                                        title: `Client Task: ${project.title}`,
-                                                        description: `High Priority translation from ${project.author}`,
-                                                        language: project.sourceLanguage || "German",
-                                                        level: 5,
-                                                        type: 'text-input',
-                                                        category: 'client-request',
-                                                        context: `Original text: "${segment.original}"`,
-                                                        targetSentence: referenceTranslation,
-                                                        correctTranslation: segment.original,
-                                                        xpReward: 100,
-                                                        vocabularyGain: 5,
-                                                        grammarGain: 5,
-                                                        readingGain: 5,
-                                                        writingGain: 5,
-                                                        createdBy: currentUser.uid,
-                                                        isActive: true,
-                                                        order: 999,
-                                                        projectId: project.id,
-                                                        segmentId: segment.id
-                                                    } as any);
-
-                                                    const lesson = await LessonService.getLessonById(lessonId);
-                                                    if (lesson) handleLessonSelect(lesson);
-                                                } else {
-                                                    // No pending segments in this project, but maybe in others?
-                                                    // Simple fallback: reset counter and get standard lesson
-                                                    const standardNext = await LessonService.getNextLesson({ ...userSkills, lessonsSinceClientTask: 0 });
-                                                    if (standardNext && typeof standardNext !== 'string') handleLessonSelect(standardNext);
-                                                }
-                                            } else {
-                                                // No projects available, skip client task and get standard lesson
-                                                const standardNext = await LessonService.getNextLesson({
-                                                    ...userSkills,
-                                                    lessonsSinceClientTask: 0 // Reset counter since we're skipping
-                                                });
-
-                                                if (standardNext && typeof standardNext !== 'string') {
-                                                    handleLessonSelect(standardNext);
-                                                }
-                                            }
-
-                                        } else if (next === null) {
-                                            alert("You've completed all available lessons for now! Check back later for new content.");
-                                        } else {
-                                            // Standard database lesson
-                                            handleLessonSelect(next);
-                                        }
-
-                                    } catch (e) {
-                                        console.error('Error loading next lesson:', e);
-                                    } finally {
-                                        setIsGenerating(false);
-                                    }
-                                }}
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-4 md:py-5 bg-brand-dark text-white rounded-xl md:rounded-2xl font-bold text-lg md:text-xl shadow-xl hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                        <div className="grid md:grid-cols-2 gap-8 mb-12">
+                            {/* Option 1: Advance */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center group hover:border-brand-yellow transition-all"
                             >
-                                <Play className="w-5 h-5 md:w-6 md:h-6 fill-current group-hover:text-brand-yellow transition-colors" />
-                                Start Next Lesson
-                            </button>
-                        </motion.div>
+                                <div className="w-16 h-16 bg-brand-yellow rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-yellow/30 group-hover:scale-110 transition-transform">
+                                    <Map className="w-8 h-8 text-brand-dark" />
+                                </div>
+                                <h3 className="text-xl font-bold text-brand-dark dark:text-white mb-2">Advance Path</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[240px]">
+                                    Follow the curriculum and learn new vocabulary.
+                                </p>
+                                <button
+                                    onClick={() => handleNextStep('advance')}
+                                    className="mt-auto w-full py-4 bg-brand-dark text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-black transition-all"
+                                >
+                                    <Play className="w-5 h-5 fill-current" />
+                                    Next Lesson
+                                </button>
+                            </motion.div>
+
+                            {/* Option 2: Practice & Earn */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center group hover:border-blue-400 transition-all"
+                            >
+                                <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                    <Diamond className="w-8 h-8 text-white" />
+                                </div>
+                                <h3 className="text-xl font-bold text-brand-dark dark:text-white mb-2">Earn Lings</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[240px]">
+                                    Help real clients and earn energy refills.
+                                </p>
+                                <button
+                                    onClick={() => handleNextStep('practice')}
+                                    className="mt-auto w-full py-4 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition-all"
+                                >
+                                    <Sparkles className="w-5 h-5 fill-current" />
+                                    Find Practice
+                                </button>
+                            </motion.div>
+                        </div>
 
                         {/* Journey */}
                         <div className="space-y-4">

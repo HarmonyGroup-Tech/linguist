@@ -184,17 +184,10 @@ export const LessonService = {
      * Get the next lesson for a user based on progression triggers
      * Returns: Lesson object, 'AI_TRIGGER', 'CLIENT_TRIGGER', or null
      */
-    async getNextLesson(userSkills: UserSkills): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
+    async getNextLesson(userSkills: UserSkills, mode: 'advance' | 'practice' = 'advance'): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
         try {
-            /* AI Trigger Temporarily Disabled per User Request */
-            /*
-            if (userSkills.lessonsSinceAiGeneration >= 5) {
-                return 'AI_TRIGGER';
-            }
-            */
-
-            // Only trigger client task if we are at the right interval AND have real projects
-            if (userSkills.lessonsSinceClientTask >= 3) {
+            // Check for client task if in practice mode
+            if (mode === 'practice') {
                 return 'CLIENT_TRIGGER';
             }
 
