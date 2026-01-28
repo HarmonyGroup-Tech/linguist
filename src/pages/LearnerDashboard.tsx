@@ -15,7 +15,7 @@ import {
 } from '../services/lessonService';
 import { ProjectService, Project, db } from '../services/db';
 import { updateDoc, doc } from 'firebase/firestore';
-import { generatePersonalizedLesson, translateForValidation } from '../services/ai';
+import { generatePersonalizedLesson, translateForValidation, checkCapability } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import StreakCalendar from '../components/StreakCalendar';
@@ -203,28 +203,51 @@ export default function LearnerDashboard() {
                 const pendingProjects = await ProjectService.getPendingProjects();
 
                 if (pendingProjects.length > 0) {
-                    // 1. Pick a random project and a random pending segment
-                    const project = pendingProjects[Math.floor(Math.random() * pendingProjects.length)];
-                    // Only pick segments that are pending
-                    const segment = project.segments?.find(s => s.status === 'pending');
+                    // --- NEW: Capability Check ---
+                    // 1. Get recent lesson history for context
+                    const recentLessonIds = userSkills.completedLessons.slice(-10);
+                    const recentLessons = await Promise.all(
+                        recentLessonIds.map(id => LessonService.getLessonById(id))
+                    );
+                    const historyText = recentLessons
+                        .filter(l => !!l)
+                        .map(l => `${l?.title}: ${l?.description}`)
+                        .join(", ");
 
-                    if (segment) {
-                        // 2. Create a temporary lesson from this segment
+                    // 2. Iterate through projects and segments to find a match
+                    let matchedSegment = null;
+                    let matchedProject = null;
+
+                    for (const project of pendingProjects) {
+                        const availableSegments = project.segments?.filter(s => s.status === 'pending') || [];
+                        for (const segment of availableSegments) {
+                            const isCapable = await checkCapability(segment.original, historyText);
+                            if (isCapable) {
+                                matchedSegment = segment;
+                                matchedProject = project;
+                                break;
+                            }
+                        }
+                        if (matchedSegment) break;
+                    }
+
+                    if (matchedSegment && matchedProject) {
+                        // 3. Create a temporary lesson from this segment
                         const referenceTranslation = await translateForValidation(
-                            segment.original,
-                            project.sourceLanguage || "German"
+                            matchedSegment.original,
+                            matchedProject.sourceLanguage || "German"
                         );
 
                         const lessonId = await LessonService.createLesson({
-                            title: `Client Task: ${project.title}`,
-                            description: `High Priority translation from ${project.author}`,
-                            language: project.sourceLanguage || "German",
+                            title: `Client Task: ${matchedProject.title}`,
+                            description: `High Priority translation from ${matchedProject.author}`,
+                            language: matchedProject.sourceLanguage || "German",
                             level: 5,
                             type: 'text-input',
                             category: 'client-request',
-                            context: `Original text: "${segment.original}"`,
+                            context: `Original text: "${matchedSegment.original}"`,
                             targetSentence: referenceTranslation,
-                            correctTranslation: segment.original,
+                            correctTranslation: matchedSegment.original,
                             xpReward: 100,
                             vocabularyGain: 5,
                             grammarGain: 5,
@@ -233,19 +256,20 @@ export default function LearnerDashboard() {
                             createdBy: currentUser.uid,
                             isActive: true,
                             order: 999,
-                            projectId: project.id,
-                            segmentId: segment.id
+                            projectId: matchedProject.id,
+                            segmentId: matchedSegment.id
                         } as any);
 
                         const lesson = await LessonService.getLessonById(lessonId);
                         if (lesson) handleLessonSelect(lesson);
                     } else {
-                        alert("No practice sessions available right now. Try the path!");
+                        alert("There aren't any tasks at the moment that match your level.");
                     }
                 } else {
                     alert("No client projects available right now. Try the path!");
                 }
-            } else if (next === null) {
+            }
+            else if (next === null) {
                 alert("You've completed all available lessons for now! Check back later for new content.");
             } else if (typeof next !== 'string') {
                 // Standard database lesson

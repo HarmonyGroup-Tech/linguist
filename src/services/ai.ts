@@ -380,3 +380,40 @@ Return ONLY the translated text string. No quotes, no markdown.`
     }
 }
 
+/**
+ * Analyzes if a user is capable of translating a specific segment based on their history.
+ */
+export async function checkCapability(segmentText: string, userHistory: string): Promise<boolean> {
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a linguistic evaluator.
+                        
+Task: Decide if a language learner can handle a specific translation task.
+User's Recent Lessons: ${userHistory}
+Target Segment: "${segmentText}"
+
+Rules:
+1. If the segment contains complex grammar or vocabulary NOT covered or related to the lessons, return FALSE.
+2. If the segment is simple or the user has learned similar structures, return TRUE.
+3. Return ONLY "TRUE" or "FALSE". No explanation.`
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) return true; // Default to true if AI fails
+        const data = await response.json();
+        const content = data.choices[0].message.content.trim().toUpperCase();
+        return content.includes("TRUE");
+    } catch (e) {
+        console.error("Error checking capability:", e);
+        return true;
+    }
+}
+
