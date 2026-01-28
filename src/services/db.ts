@@ -14,11 +14,21 @@ import {
 } from 'firebase/firestore';
 
 // --- Types ---
+export interface UserTranslation {
+    userId: string;
+    userName?: string;
+    content: string;
+    timestamp: any;
+}
+
 export interface TranslationSegment {
     id: string;
     original: string;
-    translated: string;
+    translated: string; // The "primary" one (eg: first submitted or AI picked)
+    translations?: UserTranslation[]; // List of all community contributions
     status: 'pending' | 'draft' | 'approved';
+    lockedBy?: string | null;
+    lockedAt?: any;
 }
 
 export interface Project {
@@ -90,7 +100,7 @@ export const ProjectService = {
         }
     },
 
-    async submitTranslation(projectId: string, segmentId: string, translation: string): Promise<void> {
+    async submitTranslation(projectId: string, segmentId: string, translation: string, userId: string, userName?: string): Promise<void> {
         try {
             const docRef = doc(db, 'projects', projectId);
             const docSnap = await getDoc(docRef);
@@ -104,10 +114,23 @@ export const ProjectService = {
             if (segmentIndex === -1) return;
 
             // Update segment
+            const userTrans: UserTranslation = {
+                userId,
+                userName,
+                content: translation,
+                timestamp: new Date()
+            };
+
+            const translations = [...(segments[segmentIndex].translations || [])];
+            translations.push(userTrans);
+
             segments[segmentIndex] = {
                 ...segments[segmentIndex],
-                translated: translation,
-                status: 'draft'
+                translated: translation, // Update primary (for now, last one wins)
+                translations: translations,
+                status: 'draft',
+                lockedBy: null,
+                lockedAt: null
             };
 
             // Calculate progress
@@ -139,6 +162,30 @@ export const ProjectService = {
         } catch (e) {
             console.error("Error updating final translation:", e);
             throw e;
+        }
+    },
+
+    async lockSegment(projectId: string, segmentId: string, userId: string): Promise<void> {
+        try {
+            const docRef = doc(db, 'projects', projectId);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) return;
+
+            const project = docSnap.data() as Project;
+            const segments = [...(project.segments || [])];
+            const segmentIndex = segments.findIndex(s => s.id === segmentId);
+
+            if (segmentIndex === -1) return;
+
+            segments[segmentIndex] = {
+                ...segments[segmentIndex],
+                lockedBy: userId,
+                lockedAt: new Date()
+            };
+
+            await updateDoc(docRef, { segments } as any);
+        } catch (e) {
+            console.error("Error locking segment:", e);
         }
     },
 

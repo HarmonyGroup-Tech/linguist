@@ -199,8 +199,25 @@ export default function ClientDashboard() {
                                                         <div className="text-sm text-brand-dark/80 font-medium leading-relaxed">
                                                             {s.original}
                                                         </div>
-                                                        <div className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50">
-                                                            {s.translated || <span className="text-gray-300 italic">Pending...</span>}
+                                                        <div className="space-y-2">
+                                                            {s.translations && s.translations.length > 0 ? (
+                                                                s.translations.map((t, tIdx) => (
+                                                                    <div key={tIdx} className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50 relative group/trans">
+                                                                        {t.content}
+                                                                        <div className="text-[10px] text-blue-400 mt-1 flex justify-between items-center">
+                                                                            <span>By {t.userName || 'Learner'}</span>
+                                                                            <span className="opacity-0 group-hover/trans:opacity-100 transition-opacity">
+                                                                                {t.timestamp?.toDate ? t.timestamp.toDate().toLocaleDateString() :
+                                                                                    t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : 'Just now'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50">
+                                                                    {s.translated || <span className="text-gray-300 italic">Pending...</span>}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -261,8 +278,8 @@ export default function ClientDashboard() {
                                                     }
                                                 }}
                                                 className={`w-full py-4 rounded-xl font-black transition-all flex items-center justify-center gap-3 ${isReassembling || selectedProject.progress < 100
-                                                        ? 'bg-gray-100 text-gray-400'
-                                                        : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl hover:-translate-y-0.5'
+                                                    ? 'bg-gray-100 text-gray-400'
+                                                    : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl hover:-translate-y-0.5'
                                                     }`}
                                             >
                                                 {isReassembling ? (

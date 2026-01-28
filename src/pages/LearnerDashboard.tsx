@@ -156,7 +156,9 @@ export default function LearnerDashboard() {
                 await ProjectService.submitTranslation(
                     currentLesson.projectId,
                     currentLesson.segmentId,
-                    userTranslation
+                    userTranslation,
+                    currentUser.uid,
+                    currentUser.displayName || currentUser.email || 'Anonymous'
                 );
             }
 
@@ -219,7 +221,18 @@ export default function LearnerDashboard() {
                     let matchedProject = null;
 
                     for (const project of pendingProjects) {
-                        const availableSegments = project.segments?.filter(s => s.status === 'pending') || [];
+                        // Let multiple users do one work: 
+                        // Pick segments that have fewer than 3 community translations 
+                        // and aren't locked by someone else, and the user hasn't done yet.
+                        const availableSegments = project.segments?.filter(s => {
+                            const userHasDone = s.translations?.some(t => t.userId === currentUser.uid);
+                            const translationCount = s.translations?.length || 0;
+                            const isLocked = s.lockedBy && s.lockedBy !== currentUser.uid;
+
+                            // Allow if it's pending OR if it's draft but has few translations
+                            return !userHasDone && !isLocked && translationCount < 3;
+                        }) || [];
+
                         for (const segment of availableSegments) {
                             const isCapable = await checkCapability(segment.original, historyText);
                             if (isCapable) {
@@ -259,6 +272,9 @@ export default function LearnerDashboard() {
                             projectId: matchedProject.id,
                             segmentId: matchedSegment.id
                         } as any);
+
+                        // LOCK the segment for this user
+                        await ProjectService.lockSegment(matchedProject.id!, matchedSegment.id, currentUser.uid);
 
                         const lesson = await LessonService.getLessonById(lessonId);
                         if (lesson) handleLessonSelect(lesson);
