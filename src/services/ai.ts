@@ -345,3 +345,38 @@ Rules:
         return segments.join(" ");
     }
 }
+
+/**
+ * Simple translation helper to provide a reference translation for validation.
+ */
+export async function translateForValidation(text: string, fromLanguage: string): Promise<string> {
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are a professional translator.
+                        
+Task: Translate the provided text from ${fromLanguage} to English.
+Return ONLY the translated text string. No quotes, no markdown.`
+                    },
+                    {
+                        "role": "user",
+                        "content": text
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) throw new Error("AI Translation failed");
+        const data = await response.json();
+        return data.choices[0].message.content.trim();
+    } catch (e) {
+        console.error("Error translating for validation:", e);
+        return text; // Fallback
+    }
+}
+

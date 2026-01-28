@@ -13,7 +13,8 @@ import {
     LessonService,
     UserSkillsService
 } from '../services/lessonService';
-import { generatePersonalizedLesson } from '../services/ai';
+import { ProjectService, Project } from '../services/db';
+import { generatePersonalizedLesson, translateForValidation } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import StreakCalendar from '../components/StreakCalendar';
@@ -139,6 +140,15 @@ export default function LearnerDashboard() {
             if (consumeLing) {
                 await UserSkillsService.consumeLing(currentUser.uid);
                 updatedSkills.lings = Math.max(0, updatedSkills.lings - 1);
+            }
+
+            // If this was a client project task, update the project in Firestore
+            if (currentLesson.category === 'client-request' && currentLesson.projectId && currentLesson.segmentId) {
+                await ProjectService.submitTranslation(
+                    currentLesson.projectId,
+                    currentLesson.segmentId,
+                    userTranslation
+                );
             }
 
             // Check for level ups
@@ -332,50 +342,63 @@ export default function LearnerDashboard() {
                                         console.log('[Dashboard] Next Step Decision:', next);
 
                                         if (next === 'AI_TRIGGER') {
-                                            // Generate personalized AI lesson every 10 lessons
-                                            const { generatePersonalizedLesson } = await import('../services/ai');
-                                            const aiLesson = await generatePersonalizedLesson(
-                                                [], // Could extract recent mistakes here
-                                                `Level ${Math.floor(userSkills.totalXP / 100)}`, // User level as string
-                                                "Personalized Review",
-                                                userSkills.targetLanguage || "German",
-                                                userSkills.totalXP || 0
-                                            );
-
-                                            const lessonId = await LessonService.createLesson({
-                                                ...aiLesson,
-                                                createdBy: currentUser.uid,
-                                                isAiGenerated: true,
-                                                createdAt: new Date(),
-                                                isActive: true
-                                            } as any);
-
-                                            const lesson = await LessonService.getLessonById(lessonId);
-                                            if (lesson) handleLessonSelect(lesson);
-
+                                            // AI Personalized lessons are disabled per user request
+                                            console.log('AI Personalization skipped');
+                                            const standardNext = await LessonService.getNextLesson({
+                                                ...userSkills,
+                                                lessonsSinceAiGeneration: 0
+                                            });
+                                            if (standardNext && typeof standardNext !== 'string') {
+                                                handleLessonSelect(standardNext);
+                                            }
                                         } else if (next === 'CLIENT_TRIGGER') {
                                             // Check if we actually have pending projects
-                                            const { ProjectService } = await import('../services/db');
                                             const pendingProjects = await ProjectService.getPendingProjects();
 
                                             if (pendingProjects.length > 0) {
-                                                // Generate client translation task
-                                                const { generateClientRequest } = await import('../services/ai');
-                                                const clientLesson = await generateClientRequest(
-                                                    userSkills.targetLanguage || "German",
-                                                    userSkills.totalXP || 0
-                                                );
+                                                // 1. Pick a random project and a random pending segment
+                                                const project = pendingProjects[Math.floor(Math.random() * pendingProjects.length)];
+                                                // Only pick segments that are pending
+                                                const segment = project.segments?.find(s => s.status === 'pending');
 
-                                                const lessonId = await LessonService.createLesson({
-                                                    ...clientLesson,
-                                                    createdBy: currentUser.uid,
-                                                    category: 'client-request',
-                                                    createdAt: new Date(),
-                                                    isActive: true
-                                                } as any);
+                                                if (segment) {
+                                                    // 2. Create a temporary lesson from this segment
+                                                    // We use AI briefly just to get a "correctTranslation" for validation in LessonView
+                                                    const referenceTranslation = await translateForValidation(
+                                                        segment.original,
+                                                        project.sourceLanguage || "German"
+                                                    );
 
-                                                const lesson = await LessonService.getLessonById(lessonId);
-                                                if (lesson) handleLessonSelect(lesson);
+                                                    const lessonId = await LessonService.createLesson({
+                                                        title: `Client Task: ${project.title}`,
+                                                        description: `High Priority translation from ${project.author}`,
+                                                        language: project.sourceLanguage || "German",
+                                                        level: 5,
+                                                        type: 'text-input',
+                                                        category: 'client-request',
+                                                        context: `Original text: "${segment.original}"`,
+                                                        targetSentence: referenceTranslation,
+                                                        correctTranslation: segment.original,
+                                                        xpReward: 100,
+                                                        vocabularyGain: 5,
+                                                        grammarGain: 5,
+                                                        readingGain: 5,
+                                                        writingGain: 5,
+                                                        createdBy: currentUser.uid,
+                                                        isActive: true,
+                                                        order: 999,
+                                                        projectId: project.id,
+                                                        segmentId: segment.id
+                                                    } as any);
+
+                                                    const lesson = await LessonService.getLessonById(lessonId);
+                                                    if (lesson) handleLessonSelect(lesson);
+                                                } else {
+                                                    // No pending segments in this project, but maybe in others?
+                                                    // Simple fallback: reset counter and get standard lesson
+                                                    const standardNext = await LessonService.getNextLesson({ ...userSkills, lessonsSinceClientTask: 0 });
+                                                    if (standardNext && typeof standardNext !== 'string') handleLessonSelect(standardNext);
+                                                }
                                             } else {
                                                 // No projects available, skip client task and get standard lesson
                                                 const standardNext = await LessonService.getNextLesson({

@@ -88,6 +88,46 @@ export const ProjectService = {
         }
     },
 
+    async submitTranslation(projectId: string, segmentId: string, translation: string): Promise<void> {
+        try {
+            const docRef = doc(db, 'projects', projectId);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) return;
+
+            const project = docSnap.data() as Project;
+            const segments = [...(project.segments || [])];
+            const segmentIndex = segments.findIndex(s => s.id === segmentId);
+
+            if (segmentIndex === -1) return;
+
+            // Update segment
+            segments[segmentIndex] = {
+                ...segments[segmentIndex],
+                translated: translation,
+                status: 'draft'
+            };
+
+            // Calculate progress
+            const draftCount = segments.filter(s => s.status === 'draft' || s.status === 'approved').length;
+            const progress = Math.round((draftCount / segments.length) * 100);
+
+            // Determine status
+            let status = project.status;
+            if (status === 'Draft') status = 'Translating';
+            if (progress === 100) status = 'Review';
+
+            await updateDoc(docRef, {
+                segments,
+                progress,
+                status
+            } as any);
+        } catch (e) {
+            console.error("Error submitting translation:", e);
+            throw e;
+        }
+    },
+
     async deleteUserProjects(userId: string): Promise<void> {
         try {
             const q = query(collection(db, 'projects'), where("ownerId", "==", userId));

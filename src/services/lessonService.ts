@@ -67,6 +67,10 @@ export interface Lesson {
     createdAt: Date | Timestamp;
     isActive: boolean;
     order: number;
+
+    // Project Integration
+    projectId?: string;
+    segmentId?: string;
 }
 
 export interface UserSkills {
@@ -182,16 +186,15 @@ export const LessonService = {
      */
     async getNextLesson(userSkills: UserSkills): Promise<Lesson | 'AI_TRIGGER' | 'CLIENT_TRIGGER' | null> {
         try {
-            /* AI Trigger Temporarily Disabled
+            /* AI Trigger Temporarily Disabled per User Request */
+            /*
             if (userSkills.lessonsSinceAiGeneration >= 5) {
                 return 'AI_TRIGGER';
             }
             */
 
-            // Check if it's time for client task (every 3 lessons, if eligible)
-            if (userSkills.lessonsSinceClientTask >= 3 && userSkills.totalXP >= 500) {
-                // We'll check for pending projects in the dashboard
-                // Returning the trigger here so dashboard can check availability
+            // Only trigger client task if we are at the right interval AND have real projects
+            if (userSkills.lessonsSinceClientTask >= 3) {
                 return 'CLIENT_TRIGGER';
             }
 
