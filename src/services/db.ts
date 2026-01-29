@@ -44,6 +44,9 @@ export interface Project {
     status: 'Draft' | 'Translating' | 'Review' | 'Completed';
     progress: number;
     finalTranslation?: string;
+    targetTranslators?: number; // How many people should translate each segment
+    varietyPercentage?: number; // 0-100% variety slider value
+    totalCost?: number; // Total cost in USD
     createdAt: Date;
 }
 
@@ -57,6 +60,14 @@ export interface UserProgress {
 export const ProjectService = {
     async addProject(project: Omit<Project, 'id' | 'createdAt'>) {
         try {
+            // Deduct balance if totalCost is present
+            if (project.totalCost && project.totalCost > 0) {
+                const userRef = doc(db, 'users', project.ownerId);
+                await updateDoc(userRef, {
+                    balance: increment(-project.totalCost)
+                });
+            }
+
             const docRef = await addDoc(collection(db, 'projects'), {
                 ...project,
                 createdAt: new Date()
@@ -133,9 +144,17 @@ export const ProjectService = {
                 lockedAt: null
             };
 
-            // Calculate progress
-            const draftCount = segments.filter(s => s.status === 'draft' || s.status === 'approved').length;
-            const progress = Math.round((draftCount / segments.length) * 100);
+            // Calculate progress based on total required translations
+            const targetLimit = project.targetTranslators || 1;
+            const totalRequired = segments.length * targetLimit;
+            let totalCompleted = 0;
+
+            segments.forEach(s => {
+                const count = s.translations?.length || 0;
+                totalCompleted += Math.min(count, targetLimit);
+            });
+
+            const progress = Math.round((totalCompleted / totalRequired) * 100);
 
             // Determine status
             let status = project.status;
@@ -246,7 +265,14 @@ export const UserProgressService = {
         try {
             const userRef = doc(db, 'users', userId);
             const userSnap = await getDoc(userRef);
-            return userSnap.exists() ? userSnap.data() : null;
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+                return {
+                    ...data,
+                    balance: data.balance || 0 // Ensure balance is always available
+                };
+            }
+            return null;
         } catch (e) {
             console.error("Error fetching user profile:", e);
             return null;

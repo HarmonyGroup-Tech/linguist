@@ -230,7 +230,9 @@ export default function LearnerDashboard() {
                 const userHasDone = s.translations?.some(t => t.userId === currentUser.uid);
                 const translationCount = s.translations?.length || 0;
                 const isLocked = s.lockedBy && s.lockedBy !== currentUser.uid;
-                return !userHasDone && !isLocked && translationCount < 3;
+                // Use dynamic targetTranslators if defined, defaulting to 3
+                const targetLimit = project.targetTranslators || 3;
+                return !userHasDone && !isLocked && translationCount < targetLimit;
             }) || [];
 
             console.log(`[Practice Debug] Identified ${availableSegments.length} available segments for analysis.`);

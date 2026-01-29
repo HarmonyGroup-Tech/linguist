@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProjectService, type Project } from '../services/db';
+import { ProjectService, UserProgressService, type Project } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Plus, Upload, Check, FileText, Feather, LayoutGrid, Settings, ArrowLeft, ChevronRight, Zap, Languages } from 'lucide-react';
@@ -20,6 +20,8 @@ export default function ClientDashboard() {
     const [isReassembling, setIsReassembling] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
+    const [clientProfile, setClientProfile] = useState<any>(null);
+    const [variety, setVariety] = useState(50); // Default 50% variety
 
     const refreshProjects = React.useCallback(() => {
         if (currentUser) {
@@ -29,10 +31,18 @@ export default function ClientDashboard() {
         }
     }, [currentUser]);
 
+    const loadClientProfile = async () => {
+        if (currentUser) {
+            const profile = await UserProgressService.getUserProfile(currentUser.uid);
+            setClientProfile(profile);
+        }
+    };
+
     React.useEffect(() => {
         checkMaintenance();
         refreshProjects();
-    }, [refreshProjects]);
+        loadClientProfile();
+    }, [refreshProjects, currentUser]);
 
     const checkMaintenance = async () => {
         try {
@@ -76,6 +86,12 @@ export default function ClientDashboard() {
                         <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-brand-dark" title="Logout">
                             <LogOut className="w-5 h-5" />
                         </button>
+                        {clientProfile && (
+                            <div className="ml-4 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl border border-green-100 dark:border-green-900/40 flex items-center gap-2 shadow-sm">
+                                <Zap className="w-4 h-4 fill-current" />
+                                <span className="font-black text-sm">${(clientProfile.balance || 0).toFixed(2)}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -338,6 +354,9 @@ export default function ClientDashboard() {
                                 }));
 
                                 // 2. Create Project
+                                const targetTranslators = Math.floor(variety / 25) + 1;
+                                const totalCost = (fileContent.length / 100) * 0.03 * targetTranslators;
+
                                 await ProjectService.addProject({
                                     title, author,
                                     ownerId: currentUser.uid,
@@ -347,7 +366,10 @@ export default function ClientDashboard() {
                                     targetLanguage: "English",
                                     segments,
                                     status: 'Draft',
-                                    progress: 0
+                                    progress: 0,
+                                    varietyPercentage: variety,
+                                    targetTranslators,
+                                    totalCost
                                 });
 
                                 setActiveTab('projects');
@@ -392,6 +414,28 @@ export default function ClientDashboard() {
                                 </div>
                             </div>
 
+                            <div className="p-6 bg-gray-50 border border-gray-100 rounded-2xl space-y-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-sm font-black text-brand-dark uppercase tracking-widest">Translation Variety</label>
+                                    <span className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                        {Math.floor(variety / 25) + 1} Translators
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="25"
+                                    value={variety}
+                                    onChange={(e) => setVariety(parseInt(e.target.value))}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-dark"
+                                />
+                                <div className="flex justify-between text-[10px] font-black text-gray-400 uppercase">
+                                    <span>Single Voice</span>
+                                    <span>Diverse Perspectives</span>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Source Text (.txt)</label>
                                 <div
@@ -433,9 +477,24 @@ export default function ClientDashboard() {
                                 </div>
                             </div>
 
+                            <div className="bg-brand-gray/50 rounded-2xl p-6 flex items-center justify-between border border-gray-100">
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Estimated Cost</p>
+                                    <p className="text-2xl font-black text-brand-dark">
+                                        ${((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1)).toFixed(2)}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Your Balance</p>
+                                    <p className={`text-lg font-bold ${clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1)) ? 'text-red-500' : 'text-green-600'}`}>
+                                        ${(clientProfile?.balance || 0).toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+
                             <button
-                                disabled={isProcessing}
-                                className={`w-full py-4 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 mt-4 flex items-center justify-center gap-3 ${isProcessing ? 'bg-gray-100 text-gray-400 shadow-none cursor-wait' : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl'}`}
+                                disabled={isProcessing || !fileContent || (clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1)))}
+                                className={`w-full py-4 font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 mt-4 flex items-center justify-center gap-3 ${isProcessing || !fileContent || (clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1))) ? 'bg-gray-100 text-gray-400 shadow-none cursor-not-allowed' : 'bg-brand-dark text-white hover:bg-black hover:shadow-xl'}`}
                             >
                                 {isProcessing ? (
                                     <>
@@ -443,7 +502,9 @@ export default function ClientDashboard() {
                                         Processing Text with AI...
                                     </>
                                 ) : (
-                                    'Start Translation Project'
+                                    (clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1)))
+                                        ? 'Insufficient Balance'
+                                        : 'Start Translation Project'
                                 )}
                             </button>
                         </form>
