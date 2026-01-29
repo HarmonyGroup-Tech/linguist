@@ -16,6 +16,7 @@ import {
 import { ProjectService, Project, db } from '../services/db';
 import LinguMascot from '../components/LinguMascot';
 import LinguOnboarding from '../components/LinguOnboarding';
+import LessonCompletionMenu from '../components/LessonCompletionMenu';
 import { updateDoc, doc } from 'firebase/firestore';
 import { generatePersonalizedLesson, translateForValidation, checkCapability } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
@@ -31,8 +32,6 @@ export default function LearnerDashboard() {
     const [userSkills, setUserSkills] = useState<UserSkills | null>(null);
     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-    const [showCelebration, setShowCelebration] = useState(false);
-    const [levelUpSkills, setLevelUpSkills] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'path' | 'workouts'>('path');
     const [nextLingRefill, setNextLingRefill] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -42,6 +41,8 @@ export default function LearnerDashboard() {
     const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showCompletionMenu, setShowCompletionMenu] = useState(false);
+    const [sessionScore, setSessionScore] = useState(0);
 
     // Timer for ling refill
     useEffect(() => {
@@ -124,7 +125,7 @@ export default function LearnerDashboard() {
         setCurrentLesson(lesson);
     };
 
-    const handleLessonComplete = async (userTranslation: string) => {
+    const handleLessonComplete = async (userTranslation: string, score: number) => {
         if (!currentUser || !currentLesson || !userSkills) return;
 
         // Translation submitted
@@ -181,13 +182,14 @@ export default function LearnerDashboard() {
             if (updatedSkills.writing > skillsBeforeUpdate.writing) levelsUp.push('writing');
 
             if (levelsUp.length > 0) {
-                setLevelUpSkills(levelsUp);
-                setShowCelebration(true);
-                setTimeout(() => setShowCelebration(false), 3000);
+                // levelsUp popups removed per user request for smoother flow
             }
 
+            setSessionScore(score);
+            setShowCompletionMenu(true);
+
             setUserSkills(updatedSkills);
-            setCurrentLesson(null);
+            // Don't set currentLesson to null yet, wait for menu choice
 
             // Reload lessons to update available list
             const lessons = await LessonService.getAvailableLessons(updatedSkills);
@@ -201,6 +203,17 @@ export default function LearnerDashboard() {
     const handleLogout = async () => {
         await logout();
         navigate('/');
+    };
+
+    const handleCompletionChoice = async (choice: 'next' | 'practice' | 'menu') => {
+        setShowCompletionMenu(false);
+        setCurrentLesson(null);
+
+        if (choice === 'next') {
+            await handleNextStep('advance');
+        } else if (choice === 'practice') {
+            await handleNextStep('practice');
+        }
     };
 
     const startProjectTask = async (project: Project) => {
@@ -428,27 +441,7 @@ export default function LearnerDashboard() {
                     )}
                 </AnimatePresence>
 
-                {/* Level Up Celebration */}
-                <AnimatePresence>
-                    {showCelebration && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                            className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-8 py-4 rounded-2xl shadow-2xl"
-                        >
-                            <div className="flex items-center gap-3">
-                                <Award className="w-8 h-8" />
-                                <div>
-                                    <p className="font-bold text-lg">Level Up!</p>
-                                    <p className="text-sm opacity-90">
-                                        {levelUpSkills.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')} improved!
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {/* Level Up Celebration Removed */}
 
                 {/* Current Lesson View */}
                 {currentLesson ? (
@@ -471,6 +464,9 @@ export default function LearnerDashboard() {
                             >
                                 <div className="w-16 h-16 bg-brand-yellow rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-yellow/30 group-hover:scale-110 transition-transform">
                                     <Map className="w-8 h-8 text-brand-dark" />
+                                </div>
+                                <div className="text-[10px] font-black text-brand-yellow uppercase tracking-widest mb-1">
+                                    Current Lesson: {userSkills.completedLessons.length + 1}
                                 </div>
                                 <h3 className="text-xl font-bold text-brand-dark dark:text-white mb-2">Advance Path</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-[240px]">
@@ -508,17 +504,20 @@ export default function LearnerDashboard() {
                             </motion.div>
                         </div>
 
-                        {/* Journey */}
-                        <div className="space-y-4">
-                            <LessonPath
-                                lessons={availableLessons.filter(l => !l.category || l.category === 'standard')}
-                                userSkills={userSkills}
-                                onLessonSelect={handleLessonSelect}
-                            />
-                        </div>
                     </div>
                 )}
             </main>
+
+            <AnimatePresence>
+                {showCompletionMenu && (
+                    <LessonCompletionMenu
+                        score={sessionScore}
+                        onNext={() => handleCompletionChoice('next')}
+                        onPractice={() => handleCompletionChoice('practice')}
+                        onMenu={() => handleCompletionChoice('menu')}
+                    />
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {showProjectModal && (

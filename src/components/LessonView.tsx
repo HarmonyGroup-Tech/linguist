@@ -7,7 +7,7 @@ import { evaluateTranslation } from '../services/ai';
 
 interface LessonViewProps {
     lesson: Lesson;
-    onComplete: (userTranslation: string) => Promise<void>;
+    onComplete: (userTranslation: string, score: number) => Promise<void>;
     loading: boolean;
 }
 
@@ -20,6 +20,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const [isValidating, setIsValidating] = useState(false);
     const [failedExercises, setFailedExercises] = useState<Exercise[]>([]);
     const [lessonFinished, setLessonFinished] = useState(false);
+    const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<number>(0);
 
     // Dynamic list of exercises that can grow if user fails
     const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
@@ -84,9 +85,15 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         setSubmitted(true);
         setAiFeedback(feedback);
 
+        // Only count as "first attempt success" if this index isn't part of the "redo" pool
+        // or actually, simpler: total exercises in lesson vs how many were correct.
+        const originalTotal = lesson.exercises?.length || 1;
+
         if (isCorrect) {
             setShowStatus('success');
-            // Automatic move removed per user request for manual control
+            if (currentExerciseIndex < originalTotal) {
+                setFirstAttemptCorrect(prev => prev + 1);
+            }
         } else {
             setShowStatus('failure');
             // Add to failed list to redo at the end
@@ -99,7 +106,9 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
             setCurrentExerciseIndex(prev => prev + 1);
         } else {
             setLessonFinished(true);
-            await onComplete(input);
+            const originalTotal = lesson.exercises?.length || 1;
+            const score = Math.round((firstAttemptCorrect / originalTotal) * 100);
+            await onComplete(input, score);
         }
     };
 
