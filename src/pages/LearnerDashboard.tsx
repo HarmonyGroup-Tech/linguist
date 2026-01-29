@@ -210,6 +210,7 @@ export default function LearnerDashboard() {
                 .join(", ");
 
             let matchedSegment = null;
+            const rejectionReasons: string[] = [];
 
             // Filter available segments based on the crowdsourcing rules
             const availableSegments = project.segments?.filter(s => {
@@ -220,10 +221,12 @@ export default function LearnerDashboard() {
             }) || [];
 
             for (const segment of availableSegments) {
-                const isCapable = await checkCapability(segment.original, historyText);
-                if (isCapable) {
+                const result = await checkCapability(segment.original, historyText);
+                if (result.isCapable) {
                     matchedSegment = segment;
                     break;
+                } else if (result.reason) {
+                    rejectionReasons.push(`Segment "${segment.original}": ${result.reason}`);
                 }
             }
 
@@ -262,6 +265,7 @@ export default function LearnerDashboard() {
                     handleLessonSelect(lesson);
                 }
             } else {
+                console.log(`[Practice Debug] Learner incapable of project "${project.title}". Reasons:`, rejectionReasons);
                 alert("You aren't capable of doing this task yet! Complete more lessons to unlock it.");
             }
         } catch (e) {

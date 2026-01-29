@@ -383,7 +383,7 @@ Return ONLY the translated text string. No quotes, no markdown.`
 /**
  * Analyzes if a user is capable of translating a specific segment based on their history.
  */
-export async function checkCapability(segmentText: string, userHistory: string): Promise<boolean> {
+export async function checkCapability(segmentText: string, userHistory: string): Promise<{ isCapable: boolean, reason?: string }> {
     try {
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -400,21 +400,26 @@ Target Segment to Translate: "${segmentText}"
 
 Rules:
 1. Be EXTREMELY CONSERVATIVE.
-2. If the target segment contains ANY vocabulary, grammatical structures, or complexity not explicitly present or very similar to the user history, return "FALSE".
-3. If the user successfully handled similar structures and words, return "TRUE".
-4. Return ONLY "TRUE" or "FALSE". No explanation.`
+2. If the target segment contains ANY vocabulary, grammatical structures, or complexity not explicitly present or very similar to the user history, return { "isCapable": false, "reason": "Specific reason why (e.g. unknown word 'X')" }.
+3. If the user successfully handled similar structures and words, return { "isCapable": true }.
+4. Return ONLY JSON.`
                     }
                 ]
             })
         });
 
-        if (!response.ok) return false; // Default to false (safe) if AI fails
+        if (!response.ok) return { isCapable: false };
         const data = await response.json();
-        const content = data.choices[0].message.content.trim().toUpperCase();
-        return content.includes("TRUE");
+        let content = data.choices[0].message.content.trim();
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const result = JSON.parse(content);
+        return {
+            isCapable: result.isCapable === true || result.isCapable === "TRUE",
+            reason: result.reason
+        };
     } catch (e) {
         console.error("Error checking capability:", e);
-        return false; // Default to false (safe)
+        return { isCapable: false };
     }
 }
 
