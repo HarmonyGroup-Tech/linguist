@@ -8,10 +8,11 @@ import { evaluateTranslation } from '../services/ai';
 interface LessonViewProps {
     lesson: Lesson;
     onComplete: (userTranslation: string, score: number) => Promise<void>;
+    onLeave: () => void;
     loading: boolean;
 }
 
-export default function LessonView({ lesson, onComplete, loading }: LessonViewProps) {
+export default function LessonView({ lesson, onComplete, onLeave, loading }: LessonViewProps) {
     const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [input, setInput] = useState('');
     const [submitted, setSubmitted] = useState(false);
@@ -21,6 +22,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const [failedExercises, setFailedExercises] = useState<Exercise[]>([]);
     const [lessonFinished, setLessonFinished] = useState(false);
     const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<number>(0);
+    const [totalAttempts, setTotalAttempts] = useState<number>(0);
 
     // Dynamic list of exercises that can grow if user fails
     const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
@@ -84,9 +86,8 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     const handleStepComplete = (answer: string, isCorrect: boolean, feedback: string = "") => {
         setSubmitted(true);
         setAiFeedback(feedback);
+        setTotalAttempts(prev => prev + 1);
 
-        // Only count as "first attempt success" if this index isn't part of the "redo" pool
-        // or actually, simpler: total exercises in lesson vs how many were correct.
         const originalTotal = lesson.exercises?.length || 1;
 
         if (isCorrect) {
@@ -107,7 +108,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
         } else {
             setLessonFinished(true);
             const originalTotal = lesson.exercises?.length || 1;
-            const score = Math.round((firstAttemptCorrect / originalTotal) * 100);
+            const score = Math.round((originalTotal / totalAttempts) * 100);
             await onComplete(input, score);
         }
     };
@@ -125,6 +126,7 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
                     total={activeExercises.length}
                     category={lesson.category}
                     originalTotal={originalTotal}
+                    onLeave={onLeave}
                 />
             </div>
 
@@ -281,10 +283,17 @@ export default function LessonView({ lesson, onComplete, loading }: LessonViewPr
     );
 }
 
-function ProgressHeader({ index, total, category, originalTotal }: { index: number, total: number, category?: string, originalTotal: number }) {
+function ProgressHeader({ index, total, category, originalTotal, onLeave }: { index: number, total: number, category?: string, originalTotal: number, onLeave: () => void }) {
     return (
         <div className="flex items-center justify-between mb-4 px-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
+                <button
+                    onClick={onLeave}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-red-500"
+                    title="Leave Lesson"
+                >
+                    <X className="w-5 h-5" />
+                </button>
                 <div className="flex gap-1.5">
                     {Array.from({ length: total }).map((_, i) => {
                         const isRedo = i >= originalTotal;

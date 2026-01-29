@@ -367,7 +367,7 @@ export default function LearnerDashboard() {
                     <div className="flex items-center gap-2 md:gap-8">
                         <button
                             onClick={() => setShowCalendar(true)}
-                            className="hidden sm:flex items-center gap-2 text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                            className="flex items-center gap-2 text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
                         >
                             <Flame className="w-5 h-5 fill-current" />
                             <span className="font-bold">{userSkills.streak}</span>
@@ -450,6 +450,7 @@ export default function LearnerDashboard() {
                             lesson={currentLesson}
                             loading={false}
                             onComplete={handleLessonComplete}
+                            onLeave={() => setCurrentLesson(null)}
                         />
                     </div>
                 ) : (
