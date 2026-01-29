@@ -6,11 +6,13 @@ import { LogOut, Plus, Upload, Check, FileText, Feather, LayoutGrid, Settings, A
 import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePopup } from '../contexts/PopupContext';
 import { splitText, reassembleText } from '../services/ai';
 import LinguMascot from '../components/LinguMascot';
 
 export default function ClientDashboard() {
     const { currentUser, logout } = useAuth();
+    const { showAlert } = usePopup();
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [activeTab, setActiveTab] = useState<'projects' | 'upload'>('projects');
@@ -287,7 +289,7 @@ export default function ClientDashboard() {
                                                         });
                                                         refreshProjects();
                                                     } catch (e) {
-                                                        alert("Failed to reassemble text. Try again.");
+                                                        showAlert("Failed to reassemble text. Try again.", "error");
                                                     } finally {
                                                         setIsReassembling(false);
                                                     }
@@ -333,12 +335,12 @@ export default function ClientDashboard() {
                             const sourceLang = (form.elements.namedItem('sourceLang') as HTMLSelectElement).value;
 
                             if (!title || !author || !sourceLang) {
-                                alert("Please fill in all fields.");
+                                showAlert("Please fill in all fields.", "warning");
                                 return;
                             }
 
                             if (!fileContent) {
-                                alert("Please upload a text file.");
+                                showAlert("Please upload a text file.", "warning");
                                 return;
                             }
 
@@ -378,7 +380,7 @@ export default function ClientDashboard() {
                                 setFileContent(null);
                             } catch (error) {
                                 console.error("Upload failed", error);
-                                alert("Failed to process file. Please try again.");
+                                showAlert("Failed to process file. Please try again.", "error");
                             } finally {
                                 setIsProcessing(false);
                             }
@@ -450,7 +452,7 @@ export default function ClientDashboard() {
                                             reader.onload = (ev) => setFileContent(ev.target?.result as string);
                                             reader.readAsText(file);
                                         } else {
-                                            alert("Please upload a .txt file");
+                                            showAlert("Please upload a .txt file", "warning");
                                         }
                                     }}
                                 >

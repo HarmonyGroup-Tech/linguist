@@ -7,10 +7,12 @@ import { LogOut, Plus, Edit2, Trash2, Check, Feather, BookOpen, TrendingUp, Uplo
 import { parseCSV } from '../utils/csvParser';
 import { SettingsService } from '../services/settingsService';
 import { useTheme } from '../contexts/ThemeContext';
+import { usePopup } from '../contexts/PopupContext';
 
 export default function AdminDashboard() {
     const { logout, currentUser } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { showAlert, showConfirm } = usePopup();
     const navigate = useNavigate();
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,10 +50,10 @@ export default function AdminDashboard() {
             const newMode = !maintenanceMode;
             await SettingsService.setMaintenanceMode(newMode, maintenanceMessage);
             setMaintenanceMode(newMode);
-            alert(newMode ? '🔧 Maintenance mode ENABLED. All dashboards are now blocked.' : '✅ Maintenance mode DISABLED. System is accessible.');
+            showAlert(newMode ? '🔧 Maintenance mode ENABLED. All dashboards are now blocked.' : '✅ Maintenance mode DISABLED. System is accessible.', "success");
         } catch (e) {
             console.error('Error toggling maintenance mode:', e);
-            alert('Failed to toggle maintenance mode');
+            showAlert('Failed to toggle maintenance mode', "error");
         }
     };
 
@@ -71,10 +73,10 @@ export default function AdminDashboard() {
     };
 
     const handleDeleteLesson = async (lessonId: string) => {
-        if (confirm('Are you sure you want to delete this lesson?')) {
+        showConfirm('Are you sure you want to delete this lesson?', async () => {
             await LessonService.deleteLesson(lessonId);
             await loadLessons();
-        }
+        }, { type: 'warning', confirmText: 'Delete' });
     };
 
     const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

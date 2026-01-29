@@ -23,10 +23,12 @@ import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import StreakCalendar from '../components/StreakCalendar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePopup } from '../contexts/PopupContext';
 
 export default function LearnerDashboard() {
     const { logout, currentUser } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { showAlert } = usePopup();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [userSkills, setUserSkills] = useState<UserSkills | null>(null);
@@ -118,7 +120,7 @@ export default function LearnerDashboard() {
         // Ling Check for Standard Lessons
         if ((!lesson.category || lesson.category === 'standard') && !userSkills?.completedLessons.includes(lesson.id!)) {
             if ((userSkills?.lings || 0) <= 0) {
-                alert("Out of Lings! Practice with Quotations while you wait for a refill.");
+                showAlert("Out of Lings! Practice with Quotations while you wait for a refill.", "warning");
                 return;
             }
         }
@@ -295,7 +297,7 @@ export default function LearnerDashboard() {
                 }
             } else {
                 // Learner incapable of project
-                alert("You aren't capable of doing this task yet! Complete more lessons to unlock it.");
+                showAlert("You aren't capable of doing this task yet! Complete more lessons to unlock it.", "warning");
             }
         } catch (e) {
             console.error('Error starting project task:', e);
@@ -327,7 +329,7 @@ export default function LearnerDashboard() {
             // Next Step Decision logic
 
             if (next === null) {
-                alert("You've completed all available lessons for now! Check back later for new content.");
+                showAlert("You've completed all available lessons for now! Check back later for new content.", "info");
             } else if (typeof next !== 'string') {
                 // Standard database lesson
                 handleLessonSelect(next);
