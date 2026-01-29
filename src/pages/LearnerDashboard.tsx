@@ -207,10 +207,14 @@ export default function LearnerDashboard() {
             const historyText = recentLessons
                 .filter(l => !!l)
                 .map(l => `Lesson: ${l?.title} - Content: "${l?.targetSentence}"`)
-                .join(", ");
+                .join(", ") || "No lessons completed yet.";
+
+            console.log(`[Practice Debug] Analyzing against history: ${historyText}`);
 
             let matchedSegment = null;
             const rejectionReasons: string[] = [];
+
+            console.log(`[Practice Debug] Project "${project.title}" total segments: ${project.segments?.length || 0}`);
 
             // Filter available segments based on the crowdsourcing rules
             const availableSegments = project.segments?.filter(s => {
@@ -220,13 +224,16 @@ export default function LearnerDashboard() {
                 return !userHasDone && !isLocked && translationCount < 3;
             }) || [];
 
+            console.log(`[Practice Debug] Identified ${availableSegments.length} available segments for analysis.`);
+
             for (const segment of availableSegments) {
                 const result = await checkCapability(segment.original, historyText);
                 if (result.isCapable) {
                     matchedSegment = segment;
                     break;
-                } else if (result.reason) {
-                    rejectionReasons.push(`Segment "${segment.original}": ${result.reason}`);
+                } else {
+                    const reason = result.reason || "Complexity baseline exceeded (No specific reason provided by AI)";
+                    rejectionReasons.push(`Segment "${segment.original}": ${reason}`);
                 }
             }
 

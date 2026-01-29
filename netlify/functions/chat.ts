@@ -40,6 +40,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
             }
         }
 
+        if (contents.length === 0 && systemInstruction) {
+            contents.push({
+                role: "user",
+                parts: [{ text: systemInstruction }]
+            });
+        }
+
         // Using gemini-2.0-flash as confirmed available via ListModels
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
