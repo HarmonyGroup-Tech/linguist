@@ -145,7 +145,7 @@ export default function AdminDashboard() {
                         <div className="w-10 h-10 bg-brand-yellow rounded-xl flex items-center justify-center">
                             <Feather className="w-6 h-6 text-brand-dark" strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">
+                        <h1 className="hidden sm:block text-xl font-bold text-white tracking-tight">
                             Linguist <span className="text-brand-yellow font-medium ml-2">Admin</span>
                         </h1>
                     </div>

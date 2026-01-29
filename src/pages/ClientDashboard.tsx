@@ -71,7 +71,7 @@ export default function ClientDashboard() {
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <LinguMascot size="sm" animation="bounce" />
-                        <h1 className="text-xl font-bold text-brand-dark dark:text-white tracking-tight">
+                        <h1 className="hidden sm:block text-xl font-bold text-brand-dark dark:text-white tracking-tight">
                             Linguist <span className="text-gray-400 font-medium ml-2">Publisher Console</span>
                         </h1>
                     </div>

@@ -359,7 +359,7 @@ export default function LearnerDashboard() {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
                     <div className="flex items-center space-x-2 md:space-x-4">
                         <LinguMascot size="sm" animation="bounce" />
-                        <h1 className="text-lg md:text-xl font-bold text-brand-dark dark:text-white tracking-tight">
+                        <h1 className="hidden sm:block text-lg md:text-xl font-bold text-brand-dark dark:text-white tracking-tight">
                             Linguist <span className="hidden sm:inline text-gray-400 font-medium ml-2">Learn</span>
                         </h1>
                     </div>
