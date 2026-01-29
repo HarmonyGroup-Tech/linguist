@@ -13,25 +13,25 @@ interface OnboardingStep {
 const steps: OnboardingStep[] = [
     {
         title: "Willkommen, Learner!",
-        description: "I'm Lingu, your feathered guide to mastering German. Let's take a quick nest-tour!",
+        description: "I'm Lingu, your feathered guide to mastering German. Let's get you ready for your first linguistic flight!",
         icon: Sparkles,
         color: "brand-yellow"
     },
     {
-        title: "Energy is Everything",
-        description: "You have 10 Lings for daily practice. They refill every 4 hours, so use them wisely!",
+        title: "Energy & Focus",
+        description: "You have 10 Lings for daily practice. They refill every 4 hours. Use them to unlock new lessons on your path!",
         icon: Zap,
         color: "blue-500"
     },
     {
-        title: "The Golden Path",
-        description: "Follow the lesson path to grow your skills. Each node unlocks new linguistic horizons.",
+        title: "The Learning Path",
+        description: "Follow the golden nodes! Each one is a unique lesson designed by AI to grow your vocabulary and grammar.",
         icon: Map,
         color: "green-500"
     },
     {
-        title: "Maintain the Steak",
-        description: "Practice every day to keep your streak alive and earn more XP!",
+        title: "Consistency is Key",
+        description: "Master a little bit every day to build your streak. Higher streaks earn you more XP and faster refills!",
         icon: Trophy,
         color: "orange-500"
     }

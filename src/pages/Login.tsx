@@ -6,6 +6,7 @@ import { auth, db } from '../config/firebase';
 import { Feather, Loader, Mail, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LinguMascot from '../components/LinguMascot';
+import { EmailService } from '../services/emailService';
 
 export default function Login() {
     const [searchParams] = useSearchParams();
@@ -37,6 +38,7 @@ export default function Login() {
                     createdAt: new Date()
                 });
                 await sendEmailVerification(cred.user);
+                await EmailService.sendProfessionalVerification(email);
                 setVerificationSent(true);
             } else {
                 await signInWithEmailAndPassword(auth, email, password);

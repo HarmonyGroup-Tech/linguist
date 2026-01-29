@@ -589,6 +589,17 @@ export default function LearnerDashboard() {
                     />
                 )}
             </AnimatePresence>
+
+            <AnimatePresence>
+                {showOnboarding && currentUser && (
+                    <LinguOnboarding
+                        onComplete={() => {
+                            localStorage.setItem(`onboarding_done_${currentUser.uid}`, 'true');
+                            setShowOnboarding(false);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div >
     );
 }
