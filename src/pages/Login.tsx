@@ -54,12 +54,14 @@ export default function Login() {
     };
 
     const handleLogoClick = () => {
+        /* Developer cheat code disabled for launch
         const next = logoClicks + 1;
         setLogoClicks(next);
         if (next >= 5) {
             bypassVerification();
             setLogoClicks(0);
         }
+        */
     };
 
     // If logged in but not verified, show verification screen
@@ -77,11 +79,6 @@ export default function Login() {
                             className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-brand-yellow mb-8 shadow-xl shadow-brand-yellow/30 hover:rotate-12 transition-transform relative group"
                         >
                             <Mail className="w-10 h-10 text-brand-dark" strokeWidth={2.5} />
-                            {logoClicks > 0 && (
-                                <span className="absolute -top-2 -right-2 w-8 h-8 bg-brand-dark text-white text-xs font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">
-                                    {5 - logoClicks}
-                                </span>
-                            )}
                         </button>
                         <h2 className="text-4xl font-black text-brand-dark mb-4 tracking-tight">Verify Email</h2>
                         <p className="text-gray-500 font-medium leading-relaxed px-4">

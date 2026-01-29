@@ -127,7 +127,7 @@ export default function LearnerDashboard() {
     const handleLessonComplete = async (userTranslation: string) => {
         if (!currentUser || !currentLesson || !userSkills) return;
 
-        console.log('Translation submitted:', userTranslation);
+        // Translation submitted
 
         // Track which skills leveled up
         const skillsBeforeUpdate = { ...userSkills };
@@ -218,12 +218,10 @@ export default function LearnerDashboard() {
                 .map(l => `Lesson: ${l?.title} - Content: "${l?.targetSentence}"`)
                 .join(", ") || "No lessons completed yet.";
 
-            console.log(`[Practice Debug] Analyzing against history: ${historyText}`);
 
             let matchedSegment = null;
             const rejectionReasons: string[] = [];
 
-            console.log(`[Practice Debug] Project "${project.title}" total segments: ${project.segments?.length || 0}`);
 
             // Filter available segments based on the crowdsourcing rules
             const availableSegments = project.segments?.filter(s => {
@@ -235,7 +233,7 @@ export default function LearnerDashboard() {
                 return !userHasDone && !isLocked && translationCount < targetLimit;
             }) || [];
 
-            console.log(`[Practice Debug] Identified ${availableSegments.length} available segments for analysis.`);
+            // Identified available segments
 
             for (const segment of availableSegments) {
                 const result = await checkCapability(segment.original, historyText);
@@ -283,7 +281,7 @@ export default function LearnerDashboard() {
                     handleLessonSelect(lesson);
                 }
             } else {
-                console.log(`[Practice Debug] Learner incapable of project "${project.title}". Reasons:`, rejectionReasons);
+                // Learner incapable of project
                 alert("You aren't capable of doing this task yet! Complete more lessons to unlock it.");
             }
         } catch (e) {
@@ -313,7 +311,7 @@ export default function LearnerDashboard() {
         setIsGenerating(true);
         try {
             const next = await LessonService.getNextLesson(userSkills, mode);
-            console.log('[Dashboard] Next Step Decision:', next);
+            // Next Step Decision logic
 
             if (next === null) {
                 alert("You've completed all available lessons for now! Check back later for new content.");
