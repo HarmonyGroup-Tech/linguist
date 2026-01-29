@@ -1,0 +1,23 @@
+{
+    "short_name": "Linguist",
+    "name": "Linguist: Authentic Language Coach",
+    "description": "Master languages through authentic literature.",
+    "icons": [
+        {
+            "src": "/assets/branding/lingu.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/branding/lingu.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#FFD23F",
+    "background_color": "#F3F4F6",
+    "orientation": "portrait"
+}
