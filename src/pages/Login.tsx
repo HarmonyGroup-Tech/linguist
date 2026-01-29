@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import { Feather, Loader } from 'lucide-react';
+import { Feather, Loader, Mail, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import LinguMascot from '../components/LinguMascot';
 
 export default function Login() {
     const [searchParams] = useSearchParams();
     const [isSignup, setIsSignup] = useState(searchParams.get('mode') === 'signup');
     const [role, setRole] = useState<'learner' | 'client'>((searchParams.get('role') as 'client') || 'learner');
-    const [language, setLanguage] = useState('Spanish'); // Default language
+    const [language, setLanguage] = useState('German'); // Default language
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [verificationSent, setVerificationSent] = useState(false);
+    const [logoClicks, setLogoClicks] = useState(0);
+    const { currentUser, isEmailVerified, refreshUser, sendVerification, bypassVerification } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +36,8 @@ export default function Login() {
                     learningLanguage: role === 'learner' ? language : null,
                     createdAt: new Date()
                 });
+                await sendEmailVerification(cred.user);
+                setVerificationSent(true);
             } else {
                 await signInWithEmailAndPassword(auth, email, password);
             }
@@ -44,6 +51,79 @@ export default function Login() {
         }
     };
 
+    const handleLogoClick = () => {
+        const next = logoClicks + 1;
+        setLogoClicks(next);
+        if (next >= 5) {
+            bypassVerification();
+            setLogoClicks(0);
+        }
+    };
+
+    // If logged in but not verified, show verification screen
+    if (currentUser && !isEmailVerified) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-brand-gray relative overflow-hidden font-sans">
+                {/* Background Decor */}
+                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-yellow/20 blur-[100px] rounded-full" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-blob blur-[100px] rounded-full" />
+
+                <div className="w-full max-w-md p-6 relative z-10 animate-fade-in-up">
+                    <div className="text-center mb-8">
+                        <button
+                            onClick={handleLogoClick}
+                            className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-brand-yellow mb-8 shadow-xl shadow-brand-yellow/30 hover:rotate-12 transition-transform relative group"
+                        >
+                            <Mail className="w-10 h-10 text-brand-dark" strokeWidth={2.5} />
+                            {logoClicks > 0 && (
+                                <span className="absolute -top-2 -right-2 w-8 h-8 bg-brand-dark text-white text-xs font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                                    {5 - logoClicks}
+                                </span>
+                            )}
+                        </button>
+                        <h2 className="text-4xl font-black text-brand-dark mb-4 tracking-tight">Verify Email</h2>
+                        <p className="text-gray-500 font-medium leading-relaxed px-4">
+                            We've sent a magic link to <span className="text-brand-dark font-bold">{currentUser.email}</span>. Click it to start your journey!
+                        </p>
+                    </div>
+
+                    <div className="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                        <div className="flex flex-col gap-4">
+                            <button
+                                onClick={() => refreshUser()}
+                                className="w-full py-5 bg-brand-dark text-white font-black rounded-2xl shadow-lg hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 active:scale-95"
+                            >
+                                <CheckCircle2 className="w-6 h-6 text-brand-yellow" />
+                                I've verified my email
+                            </button>
+
+                            <button
+                                onClick={async () => {
+                                    await sendVerification();
+                                    setVerificationSent(true);
+                                }}
+                                disabled={verificationSent}
+                                className="w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group"
+                            >
+                                {verificationSent ? "Email Sent!" : "Resend Link"}
+                                {!verificationSent && <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                            </button>
+                        </div>
+
+                        <div className="pt-4 text-center">
+                            <button
+                                onClick={() => auth.signOut()}
+                                className="text-sm font-bold text-gray-400 hover:text-brand-dark transition-colors"
+                            >
+                                Use a different email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-brand-gray relative overflow-hidden font-sans">
             {/* Background Decor */}
@@ -52,8 +132,8 @@ export default function Login() {
 
             <div className="w-full max-w-md p-6 relative z-10 animate-fade-in-up">
                 <div className="text-center mb-8">
-                    <Link to="/" className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-yellow mb-6 shadow-lg shadow-brand-yellow/30 hover:rotate-12 transition-transform">
-                        <Feather className="w-7 h-7 text-brand-dark" strokeWidth={2.5} />
+                    <Link to="/" className="inline-block hover:scale-110 transition-transform">
+                        <LinguMascot size="lg" animation="bounce" />
                     </Link>
                     <h2 className="text-3xl font-bold text-brand-dark mb-2 tracking-tight">
                         {isSignup ? 'Create Account' : 'Welcome Back'}
@@ -100,11 +180,7 @@ export default function Login() {
                                             onChange={(e) => setLanguage(e.target.value)}
                                             className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium appearance-none"
                                         >
-                                            <option value="Spanish">Spanish</option>
-                                            <option value="French">French</option>
                                             <option value="German">German</option>
-                                            <option value="Italian">Italian</option>
-                                            <option value="Portuguese">Portuguese</option>
                                         </select>
                                     </div>
                                 )}

@@ -234,7 +234,7 @@ export default function Settings() {
 
                                 <p className="text-gray-600 dark:text-gray-400">
                                     {confirmStep === 1
-                                        ? "This will wipe your entire learning history. You will lose your 25 Lings capacity, your streak, and all your hard-earned XP."
+                                        ? "This will wipe your entire learning history. You will lose your 10 Lings capacity, your streak, and all your hard-earned XP."
                                         : "Once you click that button, there is no turning back. All your records will be purged from our systems forever."
                                     }
                                 </p>

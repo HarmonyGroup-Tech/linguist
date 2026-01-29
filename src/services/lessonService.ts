@@ -83,7 +83,7 @@ export interface UserSkills {
     streak: number;
     lastPracticeDate: string;
     completedLessons: string[];
-    lings: number;          // Current balance (0-25)
+    lings: number;          // Current balance (0-10)
     lastLingRefill: string; // ISO Date string
     targetLanguage: string; // The language the user is learning (e.g., German, Spanish)
 
@@ -385,7 +385,7 @@ export const UserSkillsService = {
                     streak: 0,
                     lastPracticeDate: "",
                     completedLessons: [],
-                    lings: 25, // Start with full lings
+                    lings: 10, // Start with full lings
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German", // Default for now
                     totalLessonsCompleted: 0,
@@ -533,7 +533,7 @@ export const UserSkillsService = {
                     streak: 0,
                     lastPracticeDate: "",
                     completedLessons: [],
-                    lings: 25,
+                    lings: 10,
                     lastLingRefill: new Date().toISOString(),
                     targetLanguage: "German",
                     totalLessonsCompleted: 0,
@@ -549,7 +549,7 @@ export const UserSkillsService = {
                 const updates: Partial<UserSkills> = {};
 
                 if (typeof data.lings === 'undefined') {
-                    updates.lings = 25;
+                    updates.lings = 10;
                     updates.lastLingRefill = new Date().toISOString();
                 }
                 if (typeof data.targetLanguage === 'undefined') {
@@ -579,7 +579,7 @@ export const UserSkillsService = {
      */
     async ensureLings(skills: UserSkills): Promise<UserSkills> {
         // Logic: 1 ling every 4 hours.
-        if (skills.lings >= 25) return skills;
+        if (skills.lings >= 10) return skills;
 
         const lastRefill = new Date(skills.lastLingRefill || new Date().toISOString());
         const now = new Date();
@@ -588,12 +588,12 @@ export const UserSkillsService = {
 
         if (diffHours >= 4) {
             const lingsToAdd = Math.floor(diffHours / 4);
-            const newLings = Math.min(25, (skills.lings || 0) + lingsToAdd);
+            const newLings = Math.min(10, (skills.lings || 0) + lingsToAdd);
 
             if (newLings > skills.lings) {
                 const timeAddedMs = lingsToAdd * 4 * 60 * 60 * 1000;
                 const newRefillTime = new Date(lastRefill.getTime() + timeAddedMs).toISOString();
-                const finalRefillTime = newLings === 25 ? now.toISOString() : newRefillTime;
+                const finalRefillTime = newLings === 10 ? now.toISOString() : newRefillTime;
 
                 const userSkillsRef = doc(db, 'userSkills', skills.userId);
                 await updateDoc(userSkillsRef, {

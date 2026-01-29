@@ -7,6 +7,7 @@ import { SettingsService } from '../services/settingsService';
 import MaintenancePage from './MaintenancePage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { splitText, reassembleText } from '../services/ai';
+import LinguMascot from '../components/LinguMascot';
 
 export default function ClientDashboard() {
     const { currentUser, logout } = useAuth();
@@ -54,15 +55,13 @@ export default function ClientDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-brand-gray text-brand-dark font-sans">
+        <div className="min-h-screen bg-brand-gray dark:bg-gray-900 text-brand-dark font-sans transition-colors duration-300">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-brand-dark rounded-xl flex items-center justify-center">
-                            <Feather className="w-6 h-6 text-white" strokeWidth={2.5} />
-                        </div>
-                        <h1 className="text-xl font-bold text-brand-dark tracking-tight">
+                        <LinguMascot size="sm" animation="bounce" />
+                        <h1 className="text-xl font-bold text-brand-dark dark:text-white tracking-tight">
                             Linguist <span className="text-gray-400 font-medium ml-2">Publisher Console</span>
                         </h1>
                     </div>

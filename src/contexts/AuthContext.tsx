@@ -1,16 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
-import { onAuthStateChanged, type User, signOut as firebaseSignOut, deleteUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, type User, signOut as firebaseSignOut, deleteUser, sendEmailVerification } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ProjectService } from '../services/db';
 import { LessonService, UserSkillsService } from '../services/lessonService';
 
 interface AuthContextType {
     currentUser: User | null;
     userRole: 'learner' | 'client' | 'admin' | null;
+    isEmailVerified: boolean;
     isAdmin: boolean;
     loading: boolean;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
+    sendVerification: () => Promise<void>;
+    bypassVerification: () => Promise<void>;
     deleteAccount: () => Promise<void>;
 }
 
@@ -20,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [userRole, setUserRole] = useState<'learner' | 'client' | 'admin' | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -30,13 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const docRef = doc(db, "users", user.uid);
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
-                        const role = docSnap.data().role as 'learner' | 'client' | 'admin';
+                        const data = docSnap.data();
+                        const role = data.role as 'learner' | 'client' | 'admin';
                         setUserRole(role);
                         setIsAdmin(role === 'admin');
+
+                        // User is verified if either Firebase says so, or we have a manual override in DB
+                        setIsEmailVerified(user.emailVerified || data.manualVerified === true);
+
                     } else {
                         // Default to learner if no profile found (e.g. new signup)
                         setUserRole('learner');
                         setIsAdmin(false);
+                        setIsEmailVerified(user.emailVerified);
                     }
                 } catch (e) {
                     console.error("Error fetching user role", e);
@@ -44,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
                 setUserRole(null);
                 setIsAdmin(false);
+                setIsEmailVerified(false);
             }
             setLoading(false);
         });
@@ -51,6 +63,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const logout = () => firebaseSignOut(auth);
+
+    const refreshUser = async () => {
+        if (auth.currentUser) {
+            await auth.currentUser.reload();
+            const user = auth.currentUser;
+            setCurrentUser(user);
+
+            // Re-check DB for manual bypass too
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+            const manual = docSnap.exists() ? docSnap.data().manualVerified === true : false;
+
+            setIsEmailVerified(user.emailVerified || manual);
+        }
+    };
+
+    const sendVerification = async () => {
+        if (auth.currentUser) {
+            await sendEmailVerification(auth.currentUser);
+        }
+    };
+
+    const bypassVerification = async () => {
+        if (auth.currentUser) {
+            const userRef = doc(db, "users", auth.currentUser.uid);
+            await updateDoc(userRef, {
+                manualVerified: true
+            });
+            await refreshUser();
+        }
+    };
 
     const deleteAccount = async () => {
         if (!currentUser) throw new Error("No user logged in");
@@ -73,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ currentUser, userRole, isAdmin, loading, logout, deleteAccount }}>
+        <AuthContext.Provider value={{ currentUser, userRole, isAdmin, isEmailVerified, loading, logout, refreshUser, sendVerification, bypassVerification, deleteAccount }}>
             {!loading && children}
         </AuthContext.Provider>
     );

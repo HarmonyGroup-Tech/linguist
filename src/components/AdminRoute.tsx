@@ -1,9 +1,9 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminRoute({ children }: { children: React.ReactNode }) {
-    const { isAdmin, loading } = useAuth();
+    const { isAdmin, isEmailVerified, loading } = useAuth();
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -11,6 +11,10 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-yellow"></div>
             </div>
         );
+    }
+
+    if (!isEmailVerified) {
+        return <Navigate to="/login" replace />;
     }
 
     if (!isAdmin) {

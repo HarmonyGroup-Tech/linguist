@@ -14,6 +14,8 @@ import {
     UserSkillsService
 } from '../services/lessonService';
 import { ProjectService, Project, db } from '../services/db';
+import LinguMascot from '../components/LinguMascot';
+import LinguOnboarding from '../components/LinguOnboarding';
 import { updateDoc, doc } from 'firebase/firestore';
 import { generatePersonalizedLesson, translateForValidation, checkCapability } from '../services/ai';
 import { SettingsService } from '../services/settingsService';
@@ -39,10 +41,11 @@ export default function LearnerDashboard() {
     const [showCalendar, setShowCalendar] = useState(false);
     const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     // Timer for ling refill
     useEffect(() => {
-        if (!userSkills || userSkills.lings >= 25) return;
+        if (!userSkills || userSkills.lings >= 10) return;
 
         const updateTimer = () => {
             const lastRefill = new Date(userSkills.lastLingRefill || new Date().toISOString());
@@ -69,6 +72,12 @@ export default function LearnerDashboard() {
         if (currentUser) {
             checkMaintenance();
             loadUserData();
+
+            // Check for onboarding
+            const onboardingDone = localStorage.getItem(`onboarding_done_${currentUser.uid}`);
+            if (!onboardingDone) {
+                setShowOnboarding(true);
+            }
         }
     }, [currentUser]);
 
@@ -335,10 +344,8 @@ export default function LearnerDashboard() {
             {/* Header */}
             <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-brand-yellow rounded-lg md:rounded-xl flex items-center justify-center">
-                            <Feather className="w-5 h-5 md:w-6 md:h-6 text-brand-dark" strokeWidth={2.5} />
-                        </div>
+                    <div className="flex items-center space-x-2 md:space-x-4">
+                        <LinguMascot size="sm" animation="bounce" />
                         <h1 className="text-lg md:text-xl font-bold text-brand-dark dark:text-white tracking-tight">
                             Linguist <span className="hidden sm:inline text-gray-400 font-medium ml-2">Learn</span>
                         </h1>
@@ -359,8 +366,8 @@ export default function LearnerDashboard() {
 
                         <div className="flex items-center gap-2 text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 md:px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-900/30 relative group cursor-help">
                             <Diamond className="w-4 h-4 md:w-5 md:h-5 fill-current" />
-                            <span className="font-bold text-sm md:text-base">{userSkills.lings ?? 25}</span>
-                            {userSkills.lings < 25 && (
+                            <span className="font-bold text-sm md:text-base">{userSkills.lings ?? 10}</span>
+                            {userSkills.lings < 10 && (
                                 <span className="hidden md:inline text-xs font-normal ml-1 opacity-70">
                                     {nextLingRefill}
                                 </span>
@@ -369,7 +376,7 @@ export default function LearnerDashboard() {
                             <div className="absolute top-full mt-2 right-0 bg-gray-800 text-white text-xs p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-48 text-center pointer-events-none z-50">
                                 Refills 1 Ling every 4 hours.
                                 <br />
-                                Max 25 Lings.
+                                Max 10 Lings.
                             </div>
                         </div>
 
