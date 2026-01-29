@@ -3,7 +3,7 @@ import LessonView from '../components/LessonView';
 // import SkillProgress from '../components/SkillProgress'; -- Removed for UX simplification
 import LessonPath from '../components/LessonPath';
 import QuotationsView from '../components/QuotationsView';
-import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles, Settings } from 'lucide-react';
+import { LogOut, Flame, Award, Feather, Map, Quote, Diamond, Moon, Sun, Play, Sparkles, Settings, ArrowLeft, ChevronRight, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +37,8 @@ export default function LearnerDashboard() {
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
     const [showCalendar, setShowCalendar] = useState(false);
+    const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
+    const [showProjectModal, setShowProjectModal] = useState(false);
 
     // Timer for ling refill
     useEffect(() => {
@@ -192,106 +194,111 @@ export default function LearnerDashboard() {
         navigate('/');
     };
 
+    const startProjectTask = async (project: Project) => {
+        if (!currentUser || !userSkills) return;
+
+        setIsGenerating(true);
+        try {
+            // --- Capability Check for specific project ---
+            const recentLessonIds = userSkills.completedLessons.slice(-10);
+            const recentLessons = await Promise.all(
+                recentLessonIds.map(id => LessonService.getLessonById(id))
+            );
+            const historyText = recentLessons
+                .filter(l => !!l)
+                .map(l => `Lesson: ${l?.title} - Content: "${l?.targetSentence}"`)
+                .join(", ");
+
+            let matchedSegment = null;
+
+            // Filter available segments based on the crowdsourcing rules
+            const availableSegments = project.segments?.filter(s => {
+                const userHasDone = s.translations?.some(t => t.userId === currentUser.uid);
+                const translationCount = s.translations?.length || 0;
+                const isLocked = s.lockedBy && s.lockedBy !== currentUser.uid;
+                return !userHasDone && !isLocked && translationCount < 3;
+            }) || [];
+
+            for (const segment of availableSegments) {
+                const isCapable = await checkCapability(segment.original, historyText);
+                if (isCapable) {
+                    matchedSegment = segment;
+                    break;
+                }
+            }
+
+            if (matchedSegment) {
+                const referenceTranslation = await translateForValidation(
+                    matchedSegment.original,
+                    project.sourceLanguage || "German"
+                );
+
+                const lessonId = await LessonService.createLesson({
+                    title: `Client Task: ${project.title}`,
+                    description: `High Priority translation from ${project.author}`,
+                    language: project.sourceLanguage || "German",
+                    level: 5,
+                    type: 'text-input',
+                    category: 'client-request',
+                    context: `Original text: "${matchedSegment.original}"`,
+                    targetSentence: referenceTranslation,
+                    correctTranslation: matchedSegment.original,
+                    xpReward: 100,
+                    vocabularyGain: 5,
+                    grammarGain: 5,
+                    readingGain: 5,
+                    writingGain: 5,
+                    createdBy: currentUser.uid,
+                    isActive: true,
+                    order: 999,
+                    projectId: project.id,
+                    segmentId: matchedSegment.id
+                } as any);
+
+                await ProjectService.lockSegment(project.id!, matchedSegment.id, currentUser.uid);
+                const lesson = await LessonService.getLessonById(lessonId);
+                if (lesson) {
+                    setShowProjectModal(false);
+                    handleLessonSelect(lesson);
+                }
+            } else {
+                alert("You aren't capable of doing this task yet! Complete more lessons to unlock it.");
+            }
+        } catch (e) {
+            console.error('Error starting project task:', e);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const handleNextStep = async (mode: 'advance' | 'practice') => {
         if (!currentUser || !userSkills) return;
+
+        if (mode === 'practice') {
+            setIsGenerating(true);
+            try {
+                const pendingProjects = await ProjectService.getPendingProjects();
+                setAvailableProjects(pendingProjects);
+                setShowProjectModal(true);
+            } catch (e) {
+                console.error('Error loading projects:', e);
+            } finally {
+                setIsGenerating(false);
+            }
+            return;
+        }
 
         setIsGenerating(true);
         try {
             const next = await LessonService.getNextLesson(userSkills, mode);
             console.log('[Dashboard] Next Step Decision:', next);
 
-            if (next === 'CLIENT_TRIGGER') {
-                // Check if we actually have pending projects
-                const pendingProjects = await ProjectService.getPendingProjects();
-
-                if (pendingProjects.length > 0) {
-                    // --- NEW: Capability Check ---
-                    // 1. Get recent lesson history for context
-                    const recentLessonIds = userSkills.completedLessons.slice(-10);
-                    const recentLessons = await Promise.all(
-                        recentLessonIds.map(id => LessonService.getLessonById(id))
-                    );
-                    const historyText = recentLessons
-                        .filter(l => !!l)
-                        .map(l => `Lesson: ${l?.title} - Content: "${l?.targetSentence}"`)
-                        .join(", ");
-
-                    // 2. Iterate through projects and segments to find a match
-                    let matchedSegment = null;
-                    let matchedProject = null;
-
-                    for (const project of pendingProjects) {
-                        // Let multiple users do one work: 
-                        // Pick segments that have fewer than 3 community translations 
-                        // and aren't locked by someone else, and the user hasn't done yet.
-                        const availableSegments = project.segments?.filter(s => {
-                            const userHasDone = s.translations?.some(t => t.userId === currentUser.uid);
-                            const translationCount = s.translations?.length || 0;
-                            const isLocked = s.lockedBy && s.lockedBy !== currentUser.uid;
-
-                            // Allow if it's pending OR if it's draft but has few translations
-                            return !userHasDone && !isLocked && translationCount < 3;
-                        }) || [];
-
-                        for (const segment of availableSegments) {
-                            const isCapable = await checkCapability(segment.original, historyText);
-                            if (isCapable) {
-                                matchedSegment = segment;
-                                matchedProject = project;
-                                break;
-                            }
-                        }
-                        if (matchedSegment) break;
-                    }
-
-                    if (matchedSegment && matchedProject) {
-                        // 3. Create a temporary lesson from this segment
-                        const referenceTranslation = await translateForValidation(
-                            matchedSegment.original,
-                            matchedProject.sourceLanguage || "German"
-                        );
-
-                        const lessonId = await LessonService.createLesson({
-                            title: `Client Task: ${matchedProject.title}`,
-                            description: `High Priority translation from ${matchedProject.author}`,
-                            language: matchedProject.sourceLanguage || "German",
-                            level: 5,
-                            type: 'text-input',
-                            category: 'client-request',
-                            context: `Original text: "${matchedSegment.original}"`,
-                            targetSentence: referenceTranslation,
-                            correctTranslation: matchedSegment.original,
-                            xpReward: 100,
-                            vocabularyGain: 5,
-                            grammarGain: 5,
-                            readingGain: 5,
-                            writingGain: 5,
-                            createdBy: currentUser.uid,
-                            isActive: true,
-                            order: 999,
-                            projectId: matchedProject.id,
-                            segmentId: matchedSegment.id
-                        } as any);
-
-                        // LOCK the segment for this user
-                        await ProjectService.lockSegment(matchedProject.id!, matchedSegment.id, currentUser.uid);
-
-                        const lesson = await LessonService.getLessonById(lessonId);
-                        if (lesson) handleLessonSelect(lesson);
-                    } else {
-                        alert("There aren't any tasks at the moment that match your level.");
-                    }
-                } else {
-                    alert("No client projects available right now. Try the path!");
-                }
-            }
-            else if (next === null) {
+            if (next === null) {
                 alert("You've completed all available lessons for now! Check back later for new content.");
             } else if (typeof next !== 'string') {
                 // Standard database lesson
                 handleLessonSelect(next);
             }
-
         } catch (e) {
             console.error('Error loading next lesson:', e);
         } finally {
@@ -494,6 +501,67 @@ export default function LearnerDashboard() {
                     </div>
                 )}
             </main>
+
+            <AnimatePresence>
+                {showProjectModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                <h3 className="text-2xl font-black text-brand-dark dark:text-white">Available Practice</h3>
+                                <button
+                                    onClick={() => setShowProjectModal(false)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5 text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4">
+                                {availableProjects.length > 0 ? (
+                                    availableProjects.map((project) => (
+                                        <button
+                                            key={project.id}
+                                            onClick={() => startProjectTask(project)}
+                                            className="w-full text-left p-6 rounded-[1.5rem] border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all flex items-center justify-between group"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                                    <Feather className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-lg text-brand-dark dark:text-white">{project.title}</p>
+                                                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{project.sourceLanguage} ➔ English</p>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <Lock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                                        <p className="text-gray-400 font-bold">No projects available for translation</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-8 bg-gray-50 dark:bg-gray-800/50 text-center">
+                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
+                                    Earn 1 Ling and +100 XP per accepted segment
+                                </p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {showCalendar && userSkills && (
