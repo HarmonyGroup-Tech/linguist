@@ -61,33 +61,39 @@ export default function ClientDashboard() {
         navigate('/');
     };
 
-    const handleSelectTranslation = async (projectId: string, segmentId: string, translation: string) => {
+    const handleToggleExclusion = async (projectId: string, segmentId: string, translationIndex: number) => {
         try {
-            await ProjectService.selectTranslation(projectId, segmentId, translation);
-            // Refresh projects to update UI
+            await ProjectService.toggleTranslationExclusion(projectId, segmentId, translationIndex);
             refreshProjects();
 
-            // Also update the selectedProject state locally if it's the one being viewed
+            // Local state update for immediate feedback
             if (selectedProject && selectedProject.id === projectId) {
                 const updatedSegments = [...(selectedProject.segments || [])];
                 const segmentIndex = updatedSegments.findIndex(s => s.id === segmentId);
                 if (segmentIndex !== -1) {
+                    const trans = [...(updatedSegments[segmentIndex].translations || [])];
+                    trans[translationIndex] = {
+                        ...trans[translationIndex],
+                        excluded: !trans[translationIndex].excluded
+                    };
+
+                    const firstValid = trans.find(t => !t.excluded);
                     updatedSegments[segmentIndex] = {
                         ...updatedSegments[segmentIndex],
-                        translated: translation,
-                        status: 'approved'
+                        translations: trans,
+                        translated: firstValid ? firstValid.content : "",
+                        status: firstValid ? 'approved' : 'pending'
                     };
+
                     setSelectedProject({
                         ...selectedProject,
                         segments: updatedSegments
                     });
                 }
             }
-
-            showAlert("Translation selected as preferred.", "success");
         } catch (e) {
-            console.error("Error selecting translation:", e);
-            showAlert("Failed to select translation.", "error");
+            console.error("Error toggling exclusion:", e);
+            showAlert("Failed to update translation status.", "error");
         }
     };
 
@@ -251,31 +257,29 @@ export default function ClientDashboard() {
                                                                 <div className="space-y-2">
                                                                     <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Community Drafts</div>
                                                                     {s.translations.map((t, tIdx) => {
-                                                                        const isSelected = s.translated === t.content;
+                                                                        const isExcluded = t.excluded === true;
                                                                         return (
                                                                             <button
                                                                                 key={tIdx}
-                                                                                onClick={() => handleSelectTranslation(selectedProject.id!, s.id, t.content)}
-                                                                                className={`w-full text-left p-4 rounded-xl border transition-all relative group/trans ${isSelected
-                                                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-600 ring-offset-2'
+                                                                                onClick={() => handleToggleExclusion(selectedProject.id!, s.id, tIdx)}
+                                                                                className={`w-full text-left p-4 rounded-xl border transition-all relative group/trans ${isExcluded
+                                                                                    ? 'bg-gray-50 text-gray-400 border-gray-200'
                                                                                     : 'bg-white text-brand-dark border-gray-100 hover:border-blue-400 hover:bg-blue-50/30'
                                                                                     }`}
                                                                             >
-                                                                                <div className={`text-sm font-bold leading-relaxed ${isSelected ? 'text-white' : 'text-blue-600'}`}>
+                                                                                <div className={`text-sm font-bold leading-relaxed flex items-center gap-3 ${isExcluded ? 'line-through opacity-50' : 'text-blue-600'}`}>
+                                                                                    <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${isExcluded ? 'bg-gray-200 border-gray-300' : 'bg-blue-600 border-blue-600'}`}>
+                                                                                        {!isExcluded && <Check className="w-3.5 h-3.5 text-white" />}
+                                                                                    </div>
                                                                                     {t.content}
                                                                                 </div>
-                                                                                <div className={`text-[10px] mt-2 flex justify-between items-center ${isSelected ? 'text-blue-100' : 'text-gray-400'}`}>
+                                                                                <div className={`text-[10px] mt-2 flex justify-between items-center ${isExcluded ? 'text-gray-300' : 'text-gray-400'}`}>
                                                                                     <span>{t.userName || 'Learner'}</span>
-                                                                                    <span className={isSelected ? 'opacity-100' : 'opacity-0 group-hover/trans:opacity-100 transition-opacity'}>
+                                                                                    <span className="opacity-0 group-hover/trans:opacity-100 transition-opacity">
                                                                                         {t.timestamp?.toDate ? t.timestamp.toDate().toLocaleDateString() :
                                                                                             t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : 'Just now'}
                                                                                     </span>
                                                                                 </div>
-                                                                                {isSelected && (
-                                                                                    <div className="absolute -top-2 -right-2 bg-green-500 text-white p-1 rounded-full shadow-lg border-2 border-white">
-                                                                                        <Check className="w-3 h-3" />
-                                                                                    </div>
-                                                                                )}
                                                                             </button>
                                                                         );
                                                                     })}

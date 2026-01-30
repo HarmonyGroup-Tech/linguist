@@ -19,6 +19,7 @@ export interface UserTranslation {
     userName?: string;
     content: string;
     timestamp: any;
+    excluded?: boolean;
 }
 
 export interface TranslationSegment {
@@ -232,7 +233,7 @@ export const ProjectService = {
         }
     },
 
-    async selectTranslation(projectId: string, segmentId: string, translation: string): Promise<void> {
+    async toggleTranslationExclusion(projectId: string, segmentId: string, translationIndex: number): Promise<void> {
         try {
             const docRef = doc(db, 'projects', projectId);
             const docSnap = await getDoc(docRef);
@@ -244,15 +245,28 @@ export const ProjectService = {
 
             if (segmentIndex === -1) return;
 
+            const translations = [...(segments[segmentIndex].translations || [])];
+            if (!translations[translationIndex]) return;
+
+            // Toggle exclusion
+            translations[translationIndex] = {
+                ...translations[translationIndex],
+                excluded: !translations[translationIndex].excluded
+            };
+
+            // Update primary 'translated' field to the first non-excluded translation
+            const firstValid = translations.find(t => !t.excluded);
+
             segments[segmentIndex] = {
                 ...segments[segmentIndex],
-                translated: translation,
-                status: 'approved'
+                translations,
+                translated: firstValid ? firstValid.content : "",
+                status: firstValid ? 'approved' : 'pending' // If all excluded, back to pending
             };
 
             await updateDoc(docRef, { segments } as any);
         } catch (e) {
-            console.error("Error selecting translation:", e);
+            console.error("Error toggling exclusion:", e);
             throw e;
         }
     },
