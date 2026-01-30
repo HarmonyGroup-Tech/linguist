@@ -125,9 +125,21 @@ export default function ClientDashboard() {
                             <LogOut className="w-5 h-5" />
                         </button>
                         {clientProfile && (
-                            <div className="ml-4 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl border border-green-100 dark:border-green-900/40 flex items-center gap-2 shadow-sm">
-                                <Zap className="w-4 h-4 fill-current" />
-                                <span className="font-black text-sm">${(clientProfile.balance || 0).toFixed(2)}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-xl border border-green-100 dark:border-green-900/40 flex items-center gap-2 shadow-sm">
+                                    <Zap className="w-4 h-4 fill-current" />
+                                    <span className="font-black text-sm">${(clientProfile.balance || 0).toFixed(2)}</span>
+                                </div>
+                                <button
+                                    onClick={() => showAlert(
+                                        "To deposit funds into your account, please contact our sales team at ege.guler@harmonygroup.digital",
+                                        "info"
+                                    )}
+                                    className="px-3 py-2 bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark rounded-xl text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Add Funds
+                                </button>
                             </div>
                         )}
                     </div>
@@ -559,10 +571,16 @@ export default function ClientDashboard() {
                                     </>
                                 ) : (
                                     (clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1)))
-                                        ? 'Insufficient Balance'
+                                        ? 'Insufficient Balance - Contact Sales'
                                         : 'Start Translation Project'
                                 )}
                             </button>
+
+                            {(clientProfile?.balance < ((fileContent?.length || 0) / 100 * 0.03 * (Math.floor(variety / 25) + 1))) && (
+                                <p className="text-xs text-center mt-4 text-gray-500 font-medium">
+                                    Need more balance? Contact <a href="mailto:ege.guler@harmonygroup.digital" className="text-brand-dark font-bold underline">ege.guler@harmonygroup.digital</a>
+                                </p>
+                            )}
                         </form>
                     </div>
                 )}
