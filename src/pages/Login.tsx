@@ -19,8 +19,15 @@ export default function Login() {
     const [error, setError] = useState('');
     const [verificationSent, setVerificationSent] = useState(false);
     const [logoClicks, setLogoClicks] = useState(0);
-    const { currentUser, isEmailVerified, refreshUser, sendVerification, bypassVerification } = useAuth();
+    const { currentUser, isEmailVerified, userRole, loading: authLoading, refreshUser, sendVerification, bypassVerification } = useAuth();
     const navigate = useNavigate();
+
+    // Auto-redirect if already logged in and verified
+    React.useEffect(() => {
+        if (currentUser && isEmailVerified && userRole && !authLoading) {
+            navigate(userRole === 'client' ? '/client' : '/learn', { replace: true });
+        }
+    }, [currentUser, isEmailVerified, userRole, authLoading, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,15 +49,16 @@ export default function Login() {
                 setVerificationSent(true);
             } else {
                 await signInWithEmailAndPassword(auth, email, password);
+                // We don't navigate manually anymore, the useEffect handles it
+                // once the role and verification status are loaded from Firestore.
             }
-            // ProtectedRoute will handle redirect based on role
-            navigate(role === 'client' ? '/client' : '/learn');
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to authenticate');
-        } finally {
             setLoading(false);
         }
+        // Note: we don't setLoading(false) on success to keep the spinner
+        // until the redirect happens.
     };
 
     const handleLogoClick = () => {
