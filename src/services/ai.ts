@@ -435,29 +435,39 @@ export async function evaluateTranslation(original: string, userTranslation: str
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are a translation validator.
+                        "content": `You are a strict translation validator for a professional platform.
                         
-Task: Check if the user's translation of the text from ${sourceLang} to English is semantically correct.
+Task: Evaluate if the user's translation truly matches the original text.
 
-Original (${sourceLang}): "${original}"
-User's Translation: "${userTranslation}"
+Original Content (${sourceLang}): "${original}"
+User's Submission (must be English): "${userTranslation}"
 
-Rules:
-1. It is okay if the user uses synonyms or slightly different phrasing as long as the meaning is identical.
-2. Return a JSON object: { "isCorrect": boolean, "feedback": "brief explanation if wrong" }
-3. Return ONLY the JSON object.`
+STRICT EVALUATION RULES:
+1. SEMANTIC ACCURACY: The meaning must be the same. 
+2. REJECT GIBBERISH: If the user types random words, keysmashing, or nonsense (e.g., "fdsf", "you anter pint"), isCorrect MUST be false.
+3. REJECT UNRELATED: If the user's input is a real sentence but totally unrelated to the original, isCorrect MUST be false.
+4. REJECT COPYING: If the user just copies the original ${sourceLang} text instead of translating it, isCorrect MUST be false.
+5. LANGUAGE: The user's translation MUST be in English.
+6. Return a JSON object: { "isCorrect": boolean, "feedback": "Brief, helpful correction or explanation if the submission is rejected." }
+7. Return ONLY the JSON object. No markdown, no explanations.`
                     }
                 ]
             })
         });
 
-        if (!response.ok) return { isCorrect: true };
+        if (!response.ok) return { isCorrect: false, feedback: "Validation service temporarily interrupted." };
         const data = await response.json();
-        const result = JSON.parse(data.choices[0].message.content.trim());
-        return result;
+        let content = data.choices[0].message.content.trim();
+        // Sanitize JSON
+        content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const result = JSON.parse(content);
+        return {
+            isCorrect: result.isCorrect === true,
+            feedback: result.feedback || ""
+        };
     } catch (e) {
         console.error("Error evaluating translation:", e);
-        return { isCorrect: true };
+        return { isCorrect: false, feedback: "Error during validation. Please try again or skip." };
     }
 }
 
