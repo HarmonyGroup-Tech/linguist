@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            setCurrentUser(user);
             if (user) {
                 try {
                     const docRef = doc(db, "users", user.uid);
@@ -57,6 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsAdmin(false);
                 setIsEmailVerified(false);
             }
+            // Set current user ONLY after role/verification is checked to avoid UI flicker
+            setCurrentUser(user);
             setLoading(false);
         });
         return unsubscribe;

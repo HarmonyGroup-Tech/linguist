@@ -23,8 +23,14 @@
   font-weight: 400;
 
   color-scheme: light;
-  color: #1F2937;
-  background-color: #ffffff;
+  --bg-main: #ffffff;
+  --bg-secondary: #F3F4F6;
+  --text-primary: #1F2937;
+  --text-secondary: #4B5563;
+  --border-primary: #E5E7EB;
+
+  background-color: var(--bg-main);
+  color: var(--text-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -35,27 +41,40 @@
 /* Dark mode styles */
 .dark {
   color-scheme: dark;
+  --bg-main: #111827;
+  --bg-secondary: #1F2937;
+  --text-primary: #F3F4F6;
+  --text-secondary: #D1D5DB;
+  --border-primary: #374151;
 }
 
 .dark body {
-  background-color: #111827;
-  color: #F3F4F6;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
 }
 
 .dark .bg-brand-gray {
-  background-color: #1F2937;
+  background-color: var(--bg-secondary);
 }
 
 .dark .bg-white {
-  background-color: #1F2937;
+  background-color: var(--bg-secondary);
+}
+
+.dark .bg-gray-50 {
+  background-color: var(--bg-main);
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--border-primary);
 }
 
 .dark .text-brand-dark {
-  color: #F3F4F6;
+  color: var(--text-primary);
 }
 
 .dark .text-gray-600 {
-  color: #D1D5DB;
+  color: var(--text-secondary);
 }
 
 .dark .text-gray-500 {
@@ -67,7 +86,7 @@
 }
 
 .dark .border-gray-100 {
-  border-color: #374151;
+  border-color: var(--border-primary);
 }
 
 .dark .border-gray-200 {

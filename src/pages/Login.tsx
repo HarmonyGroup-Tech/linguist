@@ -67,10 +67,10 @@ export default function Login() {
     // If logged in but not verified, show verification screen
     if (currentUser && !isEmailVerified) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-brand-gray relative overflow-hidden font-sans">
+            <div className="min-h-screen flex items-center justify-center bg-brand-gray dark:bg-gray-900 relative overflow-hidden font-sans transition-colors duration-300">
                 {/* Background Decor */}
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-yellow/20 blur-[100px] rounded-full" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-blob blur-[100px] rounded-full" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-blob dark:bg-brand-yellow/10 blur-[100px] rounded-full" />
 
                 <div className="w-full max-w-md p-6 relative z-10 animate-fade-in-up">
                     <div className="text-center mb-8">
@@ -80,19 +80,19 @@ export default function Login() {
                         >
                             <Mail className="w-10 h-10 text-brand-dark" strokeWidth={2.5} />
                         </button>
-                        <h2 className="text-4xl font-black text-brand-dark mb-4 tracking-tight">Verify Email</h2>
-                        <p className="text-gray-500 font-medium leading-relaxed px-4">
-                            We've sent a magic link to <span className="text-brand-dark font-bold">{currentUser.email}</span>. Click it to start your journey!
+                        <h2 className="text-4xl font-black text-brand-dark dark:text-white mb-4 tracking-tight">Verify Email</h2>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed px-4">
+                            We've sent a magic link to <span className="text-brand-dark dark:text-brand-yellow font-bold">{currentUser.email}</span>. Click it to start your journey!
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-10 shadow-2xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-gray-700 space-y-6">
                         <div className="flex flex-col gap-4">
                             <button
                                 onClick={() => refreshUser()}
-                                className="w-full py-5 bg-brand-dark text-white font-black rounded-2xl shadow-lg hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 active:scale-95"
+                                className="w-full py-5 bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark font-black rounded-2xl shadow-lg hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 active:scale-95"
                             >
-                                <CheckCircle2 className="w-6 h-6 text-brand-yellow" />
+                                <CheckCircle2 className="w-6 h-6 text-brand-yellow dark:text-brand-dark" />
                                 I've verified my email
                             </button>
 
@@ -102,7 +102,7 @@ export default function Login() {
                                     setVerificationSent(true);
                                 }}
                                 disabled={verificationSent}
-                                className="w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group"
+                                className="w-full py-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 group"
                             >
                                 {verificationSent ? "Email Sent!" : "Resend Link"}
                                 {!verificationSent && <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
@@ -112,7 +112,7 @@ export default function Login() {
                         <div className="pt-4 text-center">
                             <button
                                 onClick={() => auth.signOut()}
-                                className="text-sm font-bold text-gray-400 hover:text-brand-dark transition-colors"
+                                className="text-sm font-bold text-gray-400 hover:text-brand-dark dark:hover:text-white transition-colors"
                             >
                                 Use a different email
                             </button>
@@ -124,39 +124,39 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-gray relative overflow-hidden font-sans">
+        <div className="min-h-screen flex items-center justify-center bg-brand-gray dark:bg-gray-900 relative overflow-hidden font-sans transition-colors duration-300">
             {/* Background Decor */}
             <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-yellow/20 blur-[100px] rounded-full" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-blob blur-[100px] rounded-full" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-blob dark:bg-brand-yellow/10 blur-[100px] rounded-full" />
 
             <div className="w-full max-w-md p-6 relative z-10 animate-fade-in-up">
                 <div className="text-center mb-8">
                     <Link to="/" className="inline-block hover:scale-110 transition-transform">
                         <LinguMascot size="lg" animation="bounce" />
                     </Link>
-                    <h2 className="text-3xl font-bold text-brand-dark mb-2 tracking-tight">
+                    <h2 className="text-3xl font-bold text-brand-dark dark:text-white mb-2 tracking-tight">
                         {isSignup ? 'Create Account' : 'Welcome Back'}
                     </h2>
-                    <p className="text-base text-gray-500 font-medium">
+                    <p className="text-base text-gray-500 dark:text-gray-400 font-medium">
                         {isSignup ? 'Start your journey with Linguist' : 'Sign in to continue learning'}
                     </p>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-gray-200/50 border border-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 shadow-xl shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-gray-700">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
-                            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium text-center">
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-sm font-medium text-center">
                                 {error}
                             </div>
                         )}
 
                         {isSignup && (
                             <>
-                                <div className="flex p-1.5 bg-gray-50 border border-gray-200 rounded-2xl mb-6">
+                                <div className="flex p-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl mb-6">
                                     <button
                                         type="button"
                                         onClick={() => setRole('learner')}
-                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'learner' ? 'bg-white text-brand-dark shadow-md border border-gray-100' : 'text-gray-400 hover:text-gray-600'
+                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'learner' ? 'bg-white dark:bg-gray-800 text-brand-dark dark:text-white shadow-md border border-gray-100 dark:border-gray-700' : 'text-gray-400 hover:text-gray-600'
                                             }`}
                                     >
                                         Learner
@@ -164,7 +164,7 @@ export default function Login() {
                                     <button
                                         type="button"
                                         onClick={() => setRole('client')}
-                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'client' ? 'bg-brand-dark text-white shadow-md' : 'text-gray-400 hover:text-gray-600'
+                                        className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${role === 'client' ? 'bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark shadow-md' : 'text-gray-400 hover:text-gray-600'
                                             }`}
                                     >
                                         Publisher
@@ -173,11 +173,11 @@ export default function Login() {
 
                                 {role === 'learner' && (
                                     <div>
-                                        <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">I want to learn</label>
+                                        <label className="block text-sm font-bold text-brand-dark dark:text-gray-300 mb-2 ml-1">I want to learn</label>
                                         <select
                                             value={language}
                                             onChange={(e) => setLanguage(e.target.value)}
-                                            className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium appearance-none"
+                                            className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-brand-dark dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium appearance-none"
                                         >
                                             <option value="German">German</option>
                                         </select>
@@ -188,11 +188,11 @@ export default function Login() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Email</label>
+                                <label className="block text-sm font-bold text-brand-dark dark:text-gray-300 mb-2 ml-1">Email</label>
                                 <input
                                     type="email"
                                     required
-                                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium"
+                                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-brand-dark dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium"
                                     placeholder="hello@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -200,11 +200,11 @@ export default function Login() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-brand-dark mb-2 ml-1">Password</label>
+                                <label className="block text-sm font-bold text-brand-dark dark:text-gray-300 mb-2 ml-1">Password</label>
                                 <input
                                     type="password"
                                     required
-                                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-brand-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium"
+                                    className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-brand-dark dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all font-medium"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -223,20 +223,20 @@ export default function Login() {
                         {isSignup && (
                             <p className="text-[11px] text-center text-gray-400 font-medium px-4 leading-relaxed">
                                 By creating an account, you agree to Linguist's{' '}
-                                <Link to="/privacy" className="text-brand-dark hover:underline font-bold underline decoration-brand-yellow/30">
+                                <Link to="/privacy" className="text-brand-dark dark:text-brand-yellow hover:underline font-bold underline decoration-brand-yellow/30">
                                     Privacy Policy
                                 </Link>
                             </p>
                         )}
                     </form>
 
-                    <div className="mt-8 text-center bg-gray-50 rounded-xl py-4">
+                    <div className="mt-8 text-center bg-gray-50 dark:bg-gray-900 rounded-xl py-4">
                         <button
                             onClick={() => setIsSignup(!isSignup)}
-                            className="text-sm font-semibold text-gray-500 hover:text-brand-dark transition-colors"
+                            className="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-brand-dark dark:hover:text-white transition-colors"
                         >
                             {isSignup ? "Already have an account? " : "New to Linguist? "}
-                            <span className="text-brand-dark underline decoration-brand-yellow decoration-2 underline-offset-2">
+                            <span className="text-brand-dark dark:text-brand-yellow underline decoration-brand-yellow decoration-2 underline-offset-2">
                                 {isSignup ? 'Sign in' : 'Create account'}
                             </span>
                         </button>
