@@ -23,6 +23,7 @@ export default function LessonView({ lesson, onComplete, onLeave, loading }: Les
     const [lessonFinished, setLessonFinished] = useState(false);
     const [firstAttemptCorrect, setFirstAttemptCorrect] = useState<number>(0);
     const [totalAttempts, setTotalAttempts] = useState<number>(0);
+    const [validationStuck, setValidationStuck] = useState(false);
 
     // Dynamic list of exercises that can grow if user fails
     const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
@@ -48,6 +49,7 @@ export default function LessonView({ lesson, onComplete, onLeave, loading }: Les
         setSubmitted(false);
         setShowStatus('none');
         setInput('');
+        setValidationStuck(false);
     }, [currentExerciseIndex, lesson.id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +82,14 @@ export default function LessonView({ lesson, onComplete, onLeave, loading }: Les
             isCorrect = normalize(input) === normalize(currentExercise.targetSentence);
         }
 
-        handleStepComplete(input, isCorrect, feedback);
+        if (!isCorrect && lesson.category === 'client-request') {
+            setValidationStuck(true);
+            setAiFeedback(feedback);
+            setSubmitted(true);
+            setShowStatus('failure');
+        } else {
+            handleStepComplete(input, isCorrect, feedback);
+        }
     };
 
     const handleStepComplete = (answer: string, isCorrect: boolean, feedback: string = "") => {
@@ -111,6 +120,18 @@ export default function LessonView({ lesson, onComplete, onLeave, loading }: Les
             const score = Math.round((originalTotal / totalAttempts) * 100);
             await onComplete(input, score);
         }
+    };
+
+    const handleSkip = async () => {
+        // When skipping a client request, we send an empty string to indicate a skip
+        await onComplete('', 0);
+    };
+
+    const handleRetry = () => {
+        setInput('');
+        setSubmitted(false);
+        setShowStatus('none');
+        setValidationStuck(false);
     };
 
     const originalTotal = lesson.exercises?.length || 1;
@@ -267,13 +288,33 @@ export default function LessonView({ lesson, onComplete, onLeave, loading }: Les
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={moveToNext}
-                                    className="w-full md:w-auto px-8 md:px-10 py-3 md:py-4 bg-white text-brand-dark rounded-xl md:rounded-2xl font-black text-lg md:text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
-                                >
-                                    Continue
-                                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
-                                </button>
+                                <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                                    {validationStuck ? (
+                                        <>
+                                            <button
+                                                onClick={handleSkip}
+                                                className="px-8 md:px-10 py-3 md:py-4 bg-white/10 text-white rounded-xl md:rounded-2xl font-black text-lg md:text-xl border-2 border-white/20 hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                Skip Task
+                                            </button>
+                                            <button
+                                                onClick={handleRetry}
+                                                className="px-8 md:px-10 py-3 md:py-4 bg-white text-brand-dark rounded-xl md:rounded-2xl font-black text-lg md:text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                            >
+                                                Retry
+                                                <RefreshCw className="w-5 h-5 md:w-6 md:h-6" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={moveToNext}
+                                            className="w-full md:w-auto px-8 md:px-10 py-3 md:py-4 bg-white text-brand-dark rounded-xl md:rounded-2xl font-black text-lg md:text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                        >
+                                            Continue
+                                            <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                     )}

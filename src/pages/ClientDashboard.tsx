@@ -61,6 +61,36 @@ export default function ClientDashboard() {
         navigate('/');
     };
 
+    const handleSelectTranslation = async (projectId: string, segmentId: string, translation: string) => {
+        try {
+            await ProjectService.selectTranslation(projectId, segmentId, translation);
+            // Refresh projects to update UI
+            refreshProjects();
+
+            // Also update the selectedProject state locally if it's the one being viewed
+            if (selectedProject && selectedProject.id === projectId) {
+                const updatedSegments = [...(selectedProject.segments || [])];
+                const segmentIndex = updatedSegments.findIndex(s => s.id === segmentId);
+                if (segmentIndex !== -1) {
+                    updatedSegments[segmentIndex] = {
+                        ...updatedSegments[segmentIndex],
+                        translated: translation,
+                        status: 'approved'
+                    };
+                    setSelectedProject({
+                        ...selectedProject,
+                        segments: updatedSegments
+                    });
+                }
+            }
+
+            showAlert("Translation selected as preferred.", "success");
+        } catch (e) {
+            console.error("Error selecting translation:", e);
+            showAlert("Failed to select translation.", "error");
+        }
+    };
+
     // Show maintenance page if maintenance mode is enabled
     if (maintenanceMode) {
         return <MaintenancePage message={maintenanceMessage} />;
@@ -218,21 +248,41 @@ export default function ClientDashboard() {
                                                         </div>
                                                         <div className="space-y-2">
                                                             {s.translations && s.translations.length > 0 ? (
-                                                                s.translations.map((t, tIdx) => (
-                                                                    <div key={tIdx} className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50 relative group/trans">
-                                                                        {t.content}
-                                                                        <div className="text-[10px] text-blue-400 mt-1 flex justify-between items-center">
-                                                                            <span>By {t.userName || 'Learner'}</span>
-                                                                            <span className="opacity-0 group-hover/trans:opacity-100 transition-opacity">
-                                                                                {t.timestamp?.toDate ? t.timestamp.toDate().toLocaleDateString() :
-                                                                                    t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : 'Just now'}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                ))
+                                                                <div className="space-y-2">
+                                                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Community Drafts</div>
+                                                                    {s.translations.map((t, tIdx) => {
+                                                                        const isSelected = s.translated === t.content;
+                                                                        return (
+                                                                            <button
+                                                                                key={tIdx}
+                                                                                onClick={() => handleSelectTranslation(selectedProject.id!, s.id, t.content)}
+                                                                                className={`w-full text-left p-4 rounded-xl border transition-all relative group/trans ${isSelected
+                                                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-600 ring-offset-2'
+                                                                                    : 'bg-white text-brand-dark border-gray-100 hover:border-blue-400 hover:bg-blue-50/30'
+                                                                                    }`}
+                                                                            >
+                                                                                <div className={`text-sm font-bold leading-relaxed ${isSelected ? 'text-white' : 'text-blue-600'}`}>
+                                                                                    {t.content}
+                                                                                </div>
+                                                                                <div className={`text-[10px] mt-2 flex justify-between items-center ${isSelected ? 'text-blue-100' : 'text-gray-400'}`}>
+                                                                                    <span>{t.userName || 'Learner'}</span>
+                                                                                    <span className={isSelected ? 'opacity-100' : 'opacity-0 group-hover/trans:opacity-100 transition-opacity'}>
+                                                                                        {t.timestamp?.toDate ? t.timestamp.toDate().toLocaleDateString() :
+                                                                                            t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : 'Just now'}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {isSelected && (
+                                                                                    <div className="absolute -top-2 -right-2 bg-green-500 text-white p-1 rounded-full shadow-lg border-2 border-white">
+                                                                                        <Check className="w-3 h-3" />
+                                                                                    </div>
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             ) : (
-                                                                <div className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50">
-                                                                    {s.translated || <span className="text-gray-300 italic">Pending...</span>}
+                                                                <div className="text-sm text-blue-600 font-bold leading-relaxed bg-blue-50/50 p-3 rounded-lg border border-blue-50 italic">
+                                                                    {s.translated || 'Pending learner contributions...'}
                                                                 </div>
                                                             )}
                                                         </div>

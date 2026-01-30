@@ -167,13 +167,19 @@ export default function LearnerDashboard() {
 
             // If this was a client project task, update the project in Firestore
             if (currentLesson.category === 'client-request' && currentLesson.projectId && currentLesson.segmentId) {
-                await ProjectService.submitTranslation(
-                    currentLesson.projectId,
-                    currentLesson.segmentId,
-                    userTranslation,
-                    currentUser.uid,
-                    currentUser.displayName || currentUser.email || 'Anonymous'
-                );
+                if (userTranslation.trim() === '') {
+                    // This was a skip
+                    await ProjectService.unlockSegment(currentLesson.projectId, currentLesson.segmentId);
+                    showAlert("Task skipped. The segment has been released back to the community.", "info");
+                } else {
+                    await ProjectService.submitTranslation(
+                        currentLesson.projectId,
+                        currentLesson.segmentId,
+                        userTranslation,
+                        currentUser.uid,
+                        currentUser.displayName || currentUser.email || 'Anonymous'
+                    );
+                }
             }
 
             // Check for level ups

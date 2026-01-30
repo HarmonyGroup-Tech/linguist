@@ -208,6 +208,55 @@ export const ProjectService = {
         }
     },
 
+    async unlockSegment(projectId: string, segmentId: string): Promise<void> {
+        try {
+            const docRef = doc(db, 'projects', projectId);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) return;
+
+            const project = docSnap.data() as Project;
+            const segments = [...(project.segments || [])];
+            const segmentIndex = segments.findIndex(s => s.id === segmentId);
+
+            if (segmentIndex === -1) return;
+
+            segments[segmentIndex] = {
+                ...segments[segmentIndex],
+                lockedBy: null,
+                lockedAt: null
+            };
+
+            await updateDoc(docRef, { segments } as any);
+        } catch (e) {
+            console.error("Error unlocking segment:", e);
+        }
+    },
+
+    async selectTranslation(projectId: string, segmentId: string, translation: string): Promise<void> {
+        try {
+            const docRef = doc(db, 'projects', projectId);
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists()) return;
+
+            const project = docSnap.data() as Project;
+            const segments = [...(project.segments || [])];
+            const segmentIndex = segments.findIndex(s => s.id === segmentId);
+
+            if (segmentIndex === -1) return;
+
+            segments[segmentIndex] = {
+                ...segments[segmentIndex],
+                translated: translation,
+                status: 'approved'
+            };
+
+            await updateDoc(docRef, { segments } as any);
+        } catch (e) {
+            console.error("Error selecting translation:", e);
+            throw e;
+        }
+    },
+
     async deleteUserProjects(userId: string): Promise<void> {
         try {
             const q = query(collection(db, 'projects'), where("ownerId", "==", userId));
