@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePopup } from '../contexts/PopupContext';
 import { splitText, reassembleText } from '../services/ai';
 import LinguMascot from '../components/LinguMascot';
+import TopUpModal from '../components/TopUpModal';
 
 export default function ClientDashboard() {
     const { currentUser, logout } = useAuth();
@@ -24,6 +25,7 @@ export default function ClientDashboard() {
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
     const [clientProfile, setClientProfile] = useState<any>(null);
     const [variety, setVariety] = useState(50); // Default 50% variety
+    const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
     const refreshProjects = React.useCallback(() => {
         if (currentUser) {
@@ -131,10 +133,7 @@ export default function ClientDashboard() {
                                     <span className="font-black text-sm">${(clientProfile.balance || 0).toFixed(2)}</span>
                                 </div>
                                 <button
-                                    onClick={() => showAlert(
-                                        "To deposit funds into your account, please contact our sales team at ege.guler@harmonygroup.digital",
-                                        "info"
-                                    )}
+                                    onClick={() => setIsTopUpOpen(true)}
                                     className="px-3 py-2 bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark rounded-xl text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
@@ -145,6 +144,15 @@ export default function ClientDashboard() {
                     </div>
                 </div>
             </header>
+
+            <TopUpModal
+                isOpen={isTopUpOpen}
+                onClose={() => setIsTopUpOpen(false)}
+                onSuccess={() => {
+                    loadClientProfile();
+                    refreshProjects();
+                }}
+            />
 
             <main className="py-12 px-6 max-w-7xl mx-auto">
                 <div className="flex gap-8 mb-10 border-b border-gray-200 pb-1">

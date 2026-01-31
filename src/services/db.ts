@@ -340,5 +340,18 @@ export const UserProgressService = {
             console.error("Error fetching user profile:", e);
             return null;
         }
+    },
+
+    async incrementBalance(userId: string, amount: number) {
+        try {
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                balance: increment(amount),
+                lastTopUp: new Date()
+            });
+        } catch (e) {
+            console.error("Error incrementing balance: ", e);
+            throw e;
+        }
     }
 };
