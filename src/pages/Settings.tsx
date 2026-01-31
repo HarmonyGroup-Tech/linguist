@@ -14,7 +14,8 @@ import {
     Brain,
     Trophy,
     Zap,
-    Briefcase
+    Briefcase,
+    HelpCircle
 } from 'lucide-react';
 
 export default function Settings() {
@@ -160,6 +161,23 @@ export default function Settings() {
                                 className="px-5 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 Sign Out
+                            </button>
+                        </div>
+
+                        {/* Help & Support */}
+                        <div className="p-6 md:p-8 border-b border-gray-50 dark:border-gray-700/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-black text-brand-dark dark:text-white flex items-center gap-2">
+                                    <HelpCircle className="w-6 h-6 text-brand-yellow" />
+                                    Help & Support
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Need help or have questions about your account?</p>
+                            </div>
+                            <button
+                                onClick={() => navigate('/support')}
+                                className="w-full md:w-auto px-6 py-3 bg-brand-yellow text-brand-dark font-bold rounded-2xl hover:shadow-lg transition-all"
+                            >
+                                Visit Support Center
                             </button>
                         </div>
 

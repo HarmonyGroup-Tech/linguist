@@ -114,6 +114,26 @@ export default function Landing() {
                     </div>
                 </div>
             </main>
+
+            {/* Footer */}
+            <footer className="bg-white dark:bg-gray-900 border-t border-brand-dark/5 dark:border-white/5 py-12 px-6">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-brand-yellow rounded-lg flex items-center justify-center">
+                            <Feather className="w-5 h-5 text-brand-dark" strokeWidth={2.5} />
+                        </div>
+                        <span className="text-lg font-bold text-brand-dark dark:text-white-80">
+                            Linguist
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-8 text-sm font-bold text-brand-dark/50 dark:text-gray-400">
+                        <Link to="/support" className="hover:text-brand-dark dark:hover:text-white transition-colors">Support</Link>
+                        <Link to="/privacy" className="hover:text-brand-dark dark:hover:text-white transition-colors">Privacy Policy</Link>
+                        <span>&copy; {new Date().getFullYear()} Harmony Group Digital</span>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

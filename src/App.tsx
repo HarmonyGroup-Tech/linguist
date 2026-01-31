@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import DeleteAccount from './pages/DeleteAccount';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Support from './pages/Support';
 import MobileRedirect from './pages/MobileRedirect';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -75,6 +76,7 @@ function App() {
                 }
               />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/support" element={<Support />} />
             </Routes>
           </AuthProvider>
         </PopupProvider>
