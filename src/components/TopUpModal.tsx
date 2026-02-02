@@ -6,6 +6,7 @@ import { PaymentService } from '../services/paymentService';
 import { UserProgressService } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { usePopup } from '../contexts/PopupContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TopUpModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ const AMOUNTS = [10, 25, 50, 100];
 export default function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
     const { currentUser } = useAuth();
     const { showAlert } = usePopup();
+    const { theme } = useTheme();
     const [selectedAmount, setSelectedAmount] = useState<number>(AMOUNTS[0]);
     const [isVerifying, setIsVerifying] = useState(false);
 
@@ -74,8 +76,8 @@ export default function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalPro
                                     key={amount}
                                     onClick={() => setSelectedAmount(amount)}
                                     className={`py-4 rounded-2xl font-black text-lg transition-all border-2 ${selectedAmount === amount
-                                            ? 'bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark border-brand-dark dark:border-brand-yellow shadow-lg shadow-brand-dark/10'
-                                            : 'bg-white dark:bg-gray-800 text-gray-400 border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
+                                        ? 'bg-brand-dark dark:bg-brand-yellow text-white dark:text-brand-dark border-brand-dark dark:border-brand-yellow shadow-lg shadow-brand-dark/10'
+                                        : 'bg-white dark:bg-gray-800 text-gray-400 border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
                                         }`}
                                 >
                                     ${amount}
@@ -84,7 +86,7 @@ export default function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalPro
                         </div>
                     </div>
 
-                    <div className="pt-4 flex flex-col items-center gap-6">
+                    <div className="pt-6 pb-2 flex flex-col items-center gap-6 px-4">
                         {isVerifying ? (
                             <div className="flex flex-col items-center gap-4 text-brand-dark dark:text-gray-300">
                                 <Loader className="w-8 h-8 animate-spin" />
@@ -94,14 +96,14 @@ export default function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalPro
                             <div className="w-full">
                                 <GooglePayButton
                                     environment="TEST"
-                                    buttonColor="black"
+                                    buttonColor={theme === 'dark' ? 'white' : 'black'}
                                     buttonType="buy"
                                     buttonSizeMode="fill"
                                     paymentRequest={PaymentService.getGooglePayConfig(selectedAmount.toString())}
                                     onLoadPaymentData={handlePaymentDataLoad}
-                                    className="w-full h-[52px]"
+                                    className="w-full h-[56px]"
                                 />
-                                <p className="text-[10px] text-center text-gray-400 mt-4 font-bold uppercase tracking-tight">
+                                <p className="text-[10px] text-center text-gray-400 mt-6 font-bold uppercase tracking-tight">
                                     Secure transaction powered by Google
                                 </p>
                             </div>
